@@ -11,6 +11,21 @@
 
 #include "WebServer.hpp"
 
+struct LocationConfig {
+	std::string path;
+	std::string root;
+	std::vector<std::string> allowed_methods;
+	std::string index;
+	bool autoindex;
+	std::string cgi_extension;
+	std::string cgi_path;
+	std::string upload_path;
+	std::map<int, std::string> error_pages;
+	std::string redirect;
+	
+	LocationConfig() : autoindex(false) {}
+};
+
 struct ServerConfig {
     std::string host;
     int port;
@@ -19,6 +34,7 @@ struct ServerConfig {
     std::string index;
     size_t client_max_body_size;
     std::map<int, std::string> error_pages;
+    std::vector<LocationConfig> locations;
 };
 
 class Config {
@@ -30,12 +46,16 @@ private:
 
     //conf utility
     bool shouldSkipLine(const std::string& line);
+    std::string trim(const std::string& str);
+    std::vector<std::string> splitLine(const std::string& line);
     bool isServerStart(const std::string& line);
     bool isServerEnd(const std::string& line);
     bool handleServerStart(bool& in_server_block, ServerConfig& current_server, int line_number, std::ifstream& file);
     bool handleServerEnd(bool& in_server_block, ServerConfig& current_server, int line_number, std::ifstream& file);
     bool handleDirective(bool in_server_block, const std::string& line, ServerConfig& current_server, int line_number, std::ifstream& file);
-    std::string trim(const std::string& str);
+    bool isLocationStart(const std::string& line);
+    bool isLocationEnd(const std::string& line);
+    std::string extractLocationPath(const std::string& line);
     
 public:
     Config();

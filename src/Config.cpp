@@ -21,8 +21,20 @@ ServerConfig Config::getDefaultServerConfig() {
 }
 
 void Config::setDefaultConfig() {
-	_servers.push_back(getDefaultServerConfig());
-	log_info("using default configuration");
+	_servers.clear();
+	ServerConfig default_server = getDefaultServerConfig();
+
+	LocationConfig default_location;
+	default_location.path = "/";
+	default_location.root = "./www";
+	default_location.index = "index.html";
+	default_location.autoindex = false;
+	default_location.allowed_methods.push_back("GET");
+	default_location.allowed_methods.push_back("POST");
+	default_location.allowed_methods.push_back("DELETE");
+	
+	default_server.locations.push_back(default_location);
+	_servers.push_back(default_server);
 }
 
 void Config::parseSimpleDirective(const std::string& line, ServerConfig& server) {

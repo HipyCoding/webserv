@@ -1,4 +1,5 @@
 #include "Config.hpp"
+#include "utils.hpp"
 
 std::string Config::trim(const std::string& str) {
 	size_t start = str.find_first_not_of(" \t\r\n");
@@ -19,6 +20,44 @@ bool Config::isServerStart(const std::string& line) {
 
 bool Config::isServerEnd(const std::string& line) {
 	return trim(line) == "}";
+}
+
+bool Config::isLocationStart(const std::string& line) {
+	std::string trimmed = trim(line);
+	return trimmed.find("location") == 0 && trimmed.find("{") != std::string::npos;
+}
+
+bool Config::isLocationEnd(const std::string& line) {
+	return trim(line) == "}";
+}
+
+std::string Config::extractLocationPath(const std::string& line) {
+	size_t start = line.find("location");
+	if (start == std::string::npos)
+		return "/";
+	
+	start += 8; // length of "location"
+	size_t end = line.find("{");
+	if (end == std::string::npos)
+		return "/";
+	
+	std::string path = line.substr(start, end - start);
+	return trim(path);
+}
+
+std::vector<std::string> Config::splitLine(const std::string& line) {
+	std::vector<std::string> tokens;
+	std::istringstream iss(line);
+	std::string token;
+	
+	while (iss >> token) {
+		// remove semicolon from last token
+		if (!token.empty() && token[token.length() - 1] == ';')
+			token = token.substr(0, token.length() - 1);
+		tokens.push_back(token);
+	}
+	
+	return tokens;
 }
 
 bool Config::handleDirective(bool in_server_block, const std::string& line, ServerConfig& current_server, int line_number, std::ifstream& file) {
