@@ -68,6 +68,83 @@ void Config::parseSimpleDirective(const std::string& line, ServerConfig& server)
 		log_debug("unknown dir: " + key);
 }
 
+bool Config::parseLocationBlock(std::ifstream& file, ServerConfig& server, 
+								const std::string& location_path, int& line_number) {
+	LocationConfig location;
+	location.path = location_path;
+	location.root = server.root;
+	location.index = server.index;
+	
+	std::string line;
+	while (std::getline(file, line)) {
+		line_number++;
+		line = trim(line);
+		
+		if (shouldSkipLine(line)) 
+			continue;
+		
+		if (isLocationEnd(line)) {
+			server.locations.push_back(location);
+			return true;
+		}
+		
+		parseSimpleDirective(line, location);
+	}
+	
+	return false;
+}
+
+void Config::parseSimpleDirective(const std::string& line, LocationConfig& location) {
+	std::vector<std::string> tokens = splitLine(line);
+	if (tokens.empty()) 
+		return;
+	
+	std::string directive = tokens[0];
+	
+	if (directive == "root" && tokens.size() >= 2)
+		location.root = tokens[1];
+	else if (directive == "index" && tokens.size() >= 2)
+		location.index = tokens[1];
+	else if (directive == "autoindex" && tokens.size() >= 2)
+		location.autoindex = (tokens[1] == "on");
+	else if (directive == "allow_methods" || directive == "methods")
+		parseAllowedMethods(line, location.allowed_methods);
+	else if (directive == "cgi_extension" && tokens.size() >= 2)
+		location.cgi_extension = tokens[1];
+	else if (directive == "cgi_path" && tokens.size() >= 2)
+		location.cgi_path = tokens[1];
+	else if (directive == "upload_path" && tokens.size() >= 2)
+		location.upload_path = tokens[1];
+	else if (directive == "error_page")
+		parseErrorPage(line, location.error_pages);
+	else if (directive == "return" && tokens.size() >= 2)
+		location.redirect = tokens[1];
+}
+
+void Config::parseAllowedMethods(const std::string& line, std::vector<std::string>& methods) {
+	std::vector<std::string> tokens = splitLine(line);
+	methods.clear();
+	
+	for (size_t i = 1; i < tokens.size(); ++i) {
+		std::string method = tokens[i];
+		if (method == "GET" || method == "POST" || method == "DELETE" || method == "HEAD")
+			methods.push_back(method);
+	}
+	
+	if (methods.empty())
+		methods.push_back("GET");
+}
+
+void Config::parseErrorPage(const std::string& line, std::map<int, std::string>& error_pages) {
+	std::vector<std::string> tokens = splitLine(line);
+	
+	if (tokens.size() >= 3) {
+		int error_code = std::atoi(tokens[1].c_str());
+		std::string error_page = tokens[2];
+		error_pages[error_code] = error_page;
+	}
+}
+
 bool Config::parseConfigFile(const std::string& filename) {
 	std::ifstream file(filename.c_str());
 	if (!file.is_open()) {

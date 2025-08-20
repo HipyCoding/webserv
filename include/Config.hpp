@@ -48,14 +48,23 @@ private:
     bool shouldSkipLine(const std::string& line);
     std::string trim(const std::string& str);
     std::vector<std::string> splitLine(const std::string& line);
+    
     bool isServerStart(const std::string& line);
     bool isServerEnd(const std::string& line);
     bool handleServerStart(bool& in_server_block, ServerConfig& current_server, int line_number, std::ifstream& file);
     bool handleServerEnd(bool& in_server_block, ServerConfig& current_server, int line_number, std::ifstream& file);
-    bool handleDirective(bool in_server_block, const std::string& line, ServerConfig& current_server, int line_number, std::ifstream& file);
+    bool handleDirective(bool in_server_block, const std::string& line, ServerConfig& current_server,
+                            int line_number, std::ifstream& file);
+    
     bool isLocationStart(const std::string& line);
     bool isLocationEnd(const std::string& line);
     std::string extractLocationPath(const std::string& line);
+
+    void parseSimpleDirective(const std::string& line, LocationConfig& location);
+	bool parseLocationBlock(std::ifstream& file, ServerConfig& server, 
+							const std::string& location_path, int& line_number);
+	void parseErrorPage(const std::string& line, std::map<int, std::string>& error_pages);
+	void parseAllowedMethods(const std::string& line, std::vector<std::string>& methods);
     
 public:
     Config();

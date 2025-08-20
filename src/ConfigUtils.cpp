@@ -61,9 +61,17 @@ std::vector<std::string> Config::splitLine(const std::string& line) {
 }
 
 bool Config::handleDirective(bool in_server_block, const std::string& line, ServerConfig& current_server, int line_number, std::ifstream& file) {
+	if (isLocationStart(line)) {
+		if (!in_server_block) {
+			log_error("location directive outside server block (line " + int_to_string(line_number) + ")");
+			return false;
+		}
+		std::string location_path = extractLocationPath(line);
+		return parseLocationBlock(file, current_server, location_path, line_number);
+	}
+	
 	if (!in_server_block) {
 		log_error("directive outside server block (line " + int_to_string(line_number) + ")");
-		file.close();
 		return false;
 	}
 	parseSimpleDirective(line, current_server);
@@ -85,7 +93,8 @@ bool Config::finalizeConfig(bool in_server_block) {
 	return true;
 }
 
-bool Config::handleServerStart(bool& in_server_block, ServerConfig& current_server, int line_number, std::ifstream& file) {
+bool Config::handleServerStart(bool& in_server_block, ServerConfig& current_server,
+		int line_number, std::ifstream& file) {
 	if (in_server_block) {
 		log_error("nested server blocks not allowed (line " + int_to_string(line_number) + ")");
 		file.close();
@@ -97,7 +106,8 @@ bool Config::handleServerStart(bool& in_server_block, ServerConfig& current_serv
 	return true;
 }
 
-bool Config::handleServerEnd(bool& in_server_block, ServerConfig& current_server, int line_number, std::ifstream& file) {
+bool Config::handleServerEnd(bool& in_server_block, ServerConfig& current_server,
+		int line_number, std::ifstream& file) {
 	if (!in_server_block) {
 		log_error("unexpected '}' (line " + int_to_string(line_number) + ")");
 		file.close();
