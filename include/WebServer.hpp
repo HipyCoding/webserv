@@ -21,12 +21,15 @@
 #include "WebServer.hpp"
 #include "Config.hpp"
 #include "utils.hpp"
+#include "Cgi.hpp"
 
 class Config;
 class HttpRequest;
 
 class WebServer {
 	private:
+    CgiHandler* _cgi_handler;  // tte
+
     std::vector<struct pollfd> _poll_fds;
     std::vector<int> _server_sockets;
     std::map<int, std::string> _client_buffers;

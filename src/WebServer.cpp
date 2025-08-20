@@ -6,7 +6,7 @@
 /*   By: christian <christian@student.42.fr>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/03 07:04:49 by christian         #+#    #+#             */
-/*   Updated: 2025/08/03 07:04:52 by christian        ###   ########.fr       */
+/*   Updated: 2025/08/20 23:48:31 by christian        ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,10 +16,13 @@
 #include <sstream>
 
 WebServer::WebServer() : _config(NULL) {
+	_cgi_handler = new CgiHandler();  // tte
 }
 
 WebServer::~WebServer() {
 	cleanup();
+	delete _config;
+	delete _cgi_handler;  // tte
 }
 
 bool WebServer::initialize(const std::string& config_file) {
@@ -403,7 +406,18 @@ std::string WebServer::readFile(const std::string& file_path) {
 }
 
 std::string WebServer::handleGetRequest(const HttpRequest& request) {
-    std::string uri = request.getUri();
+	std::string uri = request.getUri();
+	
+	if (_cgi_handler && _cgi_handler->isCgiRequest(uri)) {		//tte
+		log_debug("placeholder cgi request");
+		std::string response = "HTTP/1.1 200 OK\\r\\n";
+		response += "Content-Type: text/html\\r\\n";
+		response += "Content-Length: 52\\r\\n";
+		response += "Connection: close\\r\\n\\r\\n";
+		response += "<html><body><h1>cgi placeholder test</h1></body></html>";
+		return response;
+	}														//tte
+	
     std::string file_path = getFilePath(uri);
     
     if (!fileExists(file_path)) {
