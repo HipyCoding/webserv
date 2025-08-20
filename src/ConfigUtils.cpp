@@ -85,12 +85,11 @@ bool Config::finalizeConfig(bool in_server_block) {
 	}
 		
 	if (_servers.empty()) {
-		log_error("no server blocks found in config");
-		return false;
+		log_info("no servers configured, using default");
+		setDefaultConfig();
 	}
 		
-	log_info("success parsing " + size_t_to_string(_servers.size()) + " server(s)");
-	return true;
+	return validateConfig(); // validation better now than just returning true
 }
 
 bool Config::handleServerStart(bool& in_server_block, ServerConfig& current_server,

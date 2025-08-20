@@ -145,6 +145,59 @@ void Config::parseErrorPage(const std::string& line, std::map<int, std::string>&
 	}
 }
 
+const ServerConfig* Config::findServerConfig(const std::string& host, int port, const std::string& server_name) const {
+	for (std::vector<ServerConfig>::const_iterator it = _servers.begin(); it != _servers.end(); ++it) {
+		if (it->host == host && it->port == port) {
+			if (server_name.empty() || it->server_name == server_name)
+				return &(*it);
+		}
+	}
+	
+	for (std::vector<ServerConfig>::const_iterator it = _servers.begin(); it != _servers.end(); ++it) {
+		if (it->port == port)
+			return &(*it);
+	}
+	
+	return _servers.empty() ? NULL : &_servers[0];
+}
+
+const LocationConfig* Config::findLocationConfig(const ServerConfig& server, const std::string& uri) const {
+	const LocationConfig* best_match = NULL;
+	size_t best_match_length = 0;
+	
+	for (std::vector<LocationConfig>::const_iterator it = server.locations.begin(); it != server.locations.end(); ++it) {
+		if (uri.find(it->path) == 0) {
+			if (it->path.length() > best_match_length) {
+				best_match = &(*it);
+				best_match_length = it->path.length();
+			}
+		}
+	}
+	
+	return best_match;
+}
+
+bool Config::validateConfig() const {
+	for (std::vector<ServerConfig>::const_iterator it = _servers.begin(); it != _servers.end(); ++it) {
+		if (it->port <= 0 || it->port > 65535) {
+			log_error("invalid port number " + int_to_string(it->port));
+			return false;
+		}
+		
+		if (it->root.empty()) {
+			log_error("empty root directory");
+			return false;
+		}
+		
+		if (it->client_max_body_size == 0) {
+			log_error("invalid client_max_body_size");
+			return false;
+		}
+	}
+	
+	return true;
+}
+
 bool Config::parseConfigFile(const std::string& filename) {
 	std::ifstream file(filename.c_str());
 	if (!file.is_open()) {

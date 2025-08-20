@@ -72,6 +72,12 @@ public:
     
     bool parseConfigFile(const std::string& filename);
     void setDefaultConfig();
+
+    const ServerConfig* findServerConfig(const std::string& host, int port, 
+										 const std::string& server_name = "") const;
+	const LocationConfig* findLocationConfig(const ServerConfig& server, 
+											 const std::string& uri) const;
+	bool validateConfig() const;
     
     const std::vector<ServerConfig>& getServers() const { return _servers; }
 };
