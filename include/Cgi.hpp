@@ -8,6 +8,7 @@
 #include <vector>
 #include <unistd.h>
 #include <sys/wait.h>
+#include <sys/stat.h>
 #include <iostream>
 #include <sstream>
 #include <fcntl.h>
@@ -22,13 +23,24 @@ private:
 
 	bool createPipes(int pipe_stdout[2], int pipe_stdin[2]) const;
 	void setupChildProcess(int pipe_stdout[2], int pipe_stdin[2], 
-						const HttpRequest& request, const std::string& script_path,
-						const std::map<std::string, std::string>& interpreters) const;
+				const HttpRequest& request, const std::string& script_path,
+				const std::map<std::string, std::string>& interpreters) const;
 	std::string handleParentProcess(int pipe_stdout[2], int pipe_stdin[2], 
 				const HttpRequest& request, pid_t child_pid) const;
 	
 	void initializeInterpreters();
 	std::string generateErrorResponse(int status_code, const std::string& status_text) const;
+
+	std::vector<std::string> setupEnvironment(const HttpRequest& request,
+				const std::string& script_path) const;
+	std::string getInterpreter(const std::string& script_path,
+				const std::map<std::string, std::string>& interpreters) const;
+	std::string readFromPipe(int pipe_fd) const;
+	std::string parseCgiOutput(const std::string& raw_output) const;
+	std::string generateCgiResponse(const std::string& cgi_headers, const std::string& body) const;
+	bool isExecutable(const std::string& path) const;
+	std::string getScriptPath(const std::string& uri) const;
+
 
 public:
 	CgiHandler();
@@ -40,6 +52,7 @@ public:
 	std::string execute(const std::string& script_path, 
 					   const HttpRequest& request,
 					   const std::map<std::string, std::string>& interpreters) const;
+	std::string handleCgiRequest(const HttpRequest& request) const;
 };
 
 #endif

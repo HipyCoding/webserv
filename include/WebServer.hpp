@@ -25,6 +25,7 @@
 
 class Config;
 class HttpRequest;
+class CgiHandler;
 
 class WebServer {
 	private:

@@ -6,7 +6,7 @@
 /*   By: christian <christian@student.42.fr>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/03 07:04:49 by christian         #+#    #+#             */
-/*   Updated: 2025/08/21 05:43:57 by christian        ###   ########.fr       */
+/*   Updated: 2025/08/21 18:20:46 by christian        ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -409,8 +409,7 @@ std::string WebServer::handleGetRequest(const HttpRequest& request) {
 	std::string uri = request.getUri();
 	
 	if (_cgi_handler && _cgi_handler->isCgiRequest(uri)) {		//tte
-        std::map<std::string, std::string> empty_interpreters;
-	return _cgi_handler->execute(uri, request, empty_interpreters);
+	return _cgi_handler->handleCgiRequest(request);
 	}														//tte
 	
     std::string file_path = getFilePath(uri);
@@ -489,13 +488,14 @@ std::string WebServer::handlePostRequest(const HttpRequest& request) {
     std::cout << "POST request for: " << uri << std::endl;
     std::cout << "Body length: " << body.length() << std::endl;
     
-    if (uri.find("/upload") == 0) {
+	if (_cgi_handler && _cgi_handler->isCgiRequest(uri))
+		return _cgi_handler->handleCgiRequest(request);
+	
+    if (uri.find("/upload") == 0)
         return handleFileUpload(request);
-    }
     
-    if (uri.find("/form") == 0) {
+    if (uri.find("/form") == 0) 
         return handleFormSubmission(request);
-    }
     
     return handlePostEcho(request);
 }
