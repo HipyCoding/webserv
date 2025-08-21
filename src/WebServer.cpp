@@ -6,7 +6,7 @@
 /*   By: christian <christian@student.42.fr>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/03 07:04:49 by christian         #+#    #+#             */
-/*   Updated: 2025/08/20 23:48:31 by christian        ###   ########.fr       */
+/*   Updated: 2025/08/21 05:43:57 by christian        ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -409,13 +409,8 @@ std::string WebServer::handleGetRequest(const HttpRequest& request) {
 	std::string uri = request.getUri();
 	
 	if (_cgi_handler && _cgi_handler->isCgiRequest(uri)) {		//tte
-		log_debug("placeholder cgi request");
-		std::string response = "HTTP/1.1 200 OK\\r\\n";
-		response += "Content-Type: text/html\\r\\n";
-		response += "Content-Length: 52\\r\\n";
-		response += "Connection: close\\r\\n\\r\\n";
-		response += "<html><body><h1>cgi placeholder test</h1></body></html>";
-		return response;
+        std::map<std::string, std::string> empty_interpreters;
+	return _cgi_handler->execute(uri, request, empty_interpreters);
 	}														//tte
 	
     std::string file_path = getFilePath(uri);
