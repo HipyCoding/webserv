@@ -6,7 +6,7 @@
 /*   By: christian <christian@student.42.fr>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/03 07:04:49 by christian         #+#    #+#             */
-/*   Updated: 2025/08/22 10:35:49 by christian        ###   ########.fr       */
+/*   Updated: 2025/08/22 10:50:20 by christian        ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -613,7 +613,6 @@ std::string WebServer::handleFileUpload(const HttpRequest& request) {
     std::string content_type = request.getHeader("Content-Type");
     
     std::string upload_dir = "./www/uploads";
-    mkdir(upload_dir.c_str(), 0755);
     
     std::ostringstream filename;
     filename << "upload_" << time(NULL) << ".txt";
@@ -689,8 +688,6 @@ void WebServer::cleanup() {
 std::string WebServer::handleFileUploadToLocation(const HttpRequest& request, const LocationConfig* location_config) {
 	std::string body = request.getBody();
 	std::string upload_dir = location_config->upload_path;
-
-	mkdir(upload_dir.c_str(), 0755);
 	
 	std::ostringstream filename;
 	filename << "upload_" << time(NULL) << ".txt";
