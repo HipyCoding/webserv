@@ -17,15 +17,17 @@
 #include <sstream>
 #include <fstream>
 #include <sys/stat.h>
+#include <dirent.h>
 
 #include "WebServer.hpp"
 #include "Config.hpp"
 #include "utils.hpp"
 #include "Cgi.hpp"
 
-class Config;
-class HttpRequest;
-class CgiHandler;
+class   Config;
+struct  LocationConfig;
+class   HttpRequest;
+class   CgiHandler;
 
 class WebServer {
 	private:
@@ -62,6 +64,11 @@ class WebServer {
     std::string handleFileUpload(const HttpRequest& request);
     std::string handleFormSubmission(const HttpRequest& request);
     std::string handlePostEcho(const HttpRequest& request);
+
+    std::string getFilePathWithRoot(const std::string& uri, const std::string& root);
+	std::string handleDirectoryRequest(const std::string& dir_path, const std::string& uri, const LocationConfig* location_config);
+	std::string generateDirectoryListing(const std::string& dir_path, const std::string& uri);
+	std::string handleFileUploadToLocation(const HttpRequest& request, const LocationConfig* location_config);
 
 
 public:
