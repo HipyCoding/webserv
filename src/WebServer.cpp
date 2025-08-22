@@ -6,7 +6,7 @@
 /*   By: christian <christian@student.42.fr>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/03 07:04:49 by christian         #+#    #+#             */
-/*   Updated: 2025/08/21 18:20:46 by christian        ###   ########.fr       */
+/*   Updated: 2025/08/22 10:35:49 by christian        ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -29,7 +29,7 @@ bool WebServer::initialize(const std::string& config_file) {
 	_config = new Config();
 	
 	if (!_config->parseConfigFile(config_file)) {
-		LOG_INFO("Using default configuration");
+		log_info("Using default configuration");
 		_config->setDefaultConfig();
 	}
 	
@@ -38,7 +38,7 @@ bool WebServer::initialize(const std::string& config_file) {
 	for (size_t i = 0; i < servers.size(); ++i) {
 		int server_fd = createServerSocket(servers[i].host, servers[i].port);
 		if (server_fd == -1) {
-			LOG_ERROR("Failed to create server socket for " + servers[i].host + ":" + toString(servers[i].port));
+			log_error("Failed to create server socket for " + servers[i].host + ":" + toString(servers[i].port));
 			return false;
 		}
 		
@@ -50,7 +50,7 @@ bool WebServer::initialize(const std::string& config_file) {
 		pfd.revents = 0;
 		_poll_fds.push_back(pfd);
 		
-		LOG_INFO("Server listening on " + servers[i].host + ":" + toString(servers[i].port));
+		log_info("Server listening on " + servers[i].host + ":" + toString(servers[i].port));
 	}
 	
 	return true;
@@ -59,19 +59,19 @@ bool WebServer::initialize(const std::string& config_file) {
 int WebServer::createServerSocket(const std::string& host, int port) {
 	int server_fd = socket(AF_INET, SOCK_STREAM, 0);
 	if (server_fd == -1) {
-		LOG_ERROR("Failed to create socket");
+		log_error("Failed to create socket");
 		return -1;
 	}
 	
 	int opt = 1;
 	if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) == -1) {
-		LOG_ERROR("Failed to set socket options");
+		log_error("Failed to set socket options");
 		close(server_fd);
 		return -1;
 	}
 	
 	if (fcntl(server_fd, F_SETFL, O_NONBLOCK) == -1) {
-		LOG_ERROR("Failed to set socket to non-blocking");
+		log_error("Failed to set socket to non-blocking");
 		close(server_fd);
 		return -1;
 	}
@@ -83,13 +83,13 @@ int WebServer::createServerSocket(const std::string& host, int port) {
 	addr.sin_addr.s_addr = inet_addr(host.c_str());
 	
 	if (bind(server_fd, (struct sockaddr*)&addr, sizeof(addr)) == -1) {
-		LOG_ERROR("Failed to bind socket to " + host + ":" + toString(port));
+		log_error("Failed to bind socket to " + host + ":" + toString(port));
 		close(server_fd);
 		return -1;
 	}
 	
 	if (listen(server_fd, 128) == -1) {
-		LOG_ERROR("Failed to listen on socket");
+		log_error("Failed to listen on socket");
 		close(server_fd);
 		return -1;
 	}
@@ -98,14 +98,14 @@ int WebServer::createServerSocket(const std::string& host, int port) {
 }
 
 void WebServer::run() {
-	LOG_INFO("Server entering main loop...");
+	log_info("Server entering main loop...");
 	while (true) {
 		LOG_DEBUG("Calling poll with " + toString(_poll_fds.size()) + " file descriptors...");
 		int poll_count = poll(&_poll_fds[0], _poll_fds.size(), -1);
 		LOG_DEBUG("Poll returned: " + toString(poll_count));
 		
 		if (poll_count == -1) {
-			LOG_ERROR("Poll error: " + std::string(strerror(errno)));
+			log_error("Poll error: " + std::string(strerror(errno)));
 			break;
 		}
 		
@@ -138,14 +138,14 @@ void WebServer::handleNewConnection(int server_fd) {
 
 	int client_fd = accept(server_fd, (struct sockaddr*)&client_addr, &client_len);
 	if (client_fd == -1) {
-		LOG_ERROR("Accept failed: " + std::string(strerror(errno)));
+		log_error("Accept failed: " + std::string(strerror(errno)));
 		return;
 	}
 
-	LOG_INFO("New client connected: fd = " + toString(client_fd));
+	log_info("New client connected: fd = " + toString(client_fd));
 	
 	if (fcntl(client_fd, F_SETFL, O_NONBLOCK) == -1) {
-		LOG_ERROR("fcntl failed: " + std::string(strerror(errno)));
+		log_error("fcntl failed: " + std::string(strerror(errno)));
 		close(client_fd);
 		return;
 	}
@@ -170,9 +170,9 @@ void WebServer::handleClientData(int client_fd, int poll_index) {
 
 	if (bytes_read <= 0) {
 		if (bytes_read == 0) {
-			LOG_INFO("Client " + toString(client_fd) + " disconnected");
+			log_info("Client " + toString(client_fd) + " disconnected");
 		} else {
-			LOG_ERROR("recv() error: " + std::string(strerror(errno)));
+			log_error("recv() error: " + std::string(strerror(errno)));
 		}
 		close(client_fd);
 		_poll_fds.erase(_poll_fds.begin() + poll_index);
@@ -228,7 +228,7 @@ void WebServer::handleClientData(int client_fd, int poll_index) {
 			sendResponse(client_fd, response);
 			LOG_DEBUG("Response sent to client " + toString(client_fd));
 		} else {
-			LOG_ERROR("HTTP request parse error for client " + toString(client_fd));
+			log_error("HTTP request parse error for client " + toString(client_fd));
 			std::string error_response = generateErrorResponse(400, "Bad Request");
 			sendResponse(client_fd, error_response);
 		}
@@ -236,7 +236,7 @@ void WebServer::handleClientData(int client_fd, int poll_index) {
 		close(client_fd);
 		_poll_fds.erase(_poll_fds.begin() + poll_index);
 		_client_buffers.erase(client_fd);
-		LOG_INFO("Client " + toString(client_fd) + " connection closed");
+		log_info("Client " + toString(client_fd) + " connection closed");
 	} else {
 		LOG_DEBUG("Waiting for " + toString(expected_total_size - current_size) + " more bytes from client " + toString(client_fd));
 	}
@@ -245,7 +245,7 @@ void WebServer::handleClientData(int client_fd, int poll_index) {
 void WebServer::sendResponse(int client_fd, const std::string& response) {
 	ssize_t bytes_sent = send(client_fd, response.c_str(), response.length(), 0);
 	if (bytes_sent == -1) {
-		LOG_ERROR("Failed to send response to client " + toString(client_fd) + ": " + std::string(strerror(errno)));
+		log_error("Failed to send response to client " + toString(client_fd) + ": " + std::string(strerror(errno)));
 	} else {
 		LOG_DEBUG("Sent " + toString(bytes_sent) + " bytes to client " + toString(client_fd));
 	}
@@ -349,27 +349,21 @@ std::string WebServer::getContentType(const std::string& file_path) {
     return "application/octet-stream";
 }
 
-std::string WebServer::getFilePath(const std::string& uri) {
-    std::string root = "./www";
-    
-    if (uri == "/") {
-        return root + "/index.html";
-    }
-    
-    std::string clean_uri = uri;
-    size_t pos = 0;
-    while ((pos = clean_uri.find("../", pos)) != std::string::npos) {
-        clean_uri.erase(pos, 3);
-    }
+std::string WebServer::getFilePathWithRoot(const std::string& uri, const std::string& root) {
+	if (uri == "/")
+		return root + "/index.html";
+	
+	std::string clean_uri = uri;
+	size_t pos = 0;
+	while ((pos = clean_uri.find("../", pos)) != std::string::npos)
+		clean_uri.erase(pos, 3);
 
-    pos = 0;
-    while ((pos = clean_uri.find("//", pos)) != std::string::npos) {
-        clean_uri.erase(pos, 1);
-    }
-    
-    return root + clean_uri;
+	pos = 0;
+	while ((pos = clean_uri.find("//", pos)) != std::string::npos)
+		clean_uri.erase(pos, 1);
+	
+	return root + clean_uri;
 }
-
 
 bool WebServer::fileExists(const std::string& path) {
 	struct stat buffer;
@@ -387,7 +381,7 @@ bool WebServer::isDirectory(const std::string& path) {
 std::string WebServer::readFile(const std::string& file_path) {
 	std::ifstream file(file_path.c_str(), std::ios::binary);
 	if (!file.is_open()) {
-		LOG_ERROR("Cannot open file: " + file_path);
+		log_error("Cannot open file: " + file_path);
 		return "";
 	}
 	
@@ -397,7 +391,7 @@ std::string WebServer::readFile(const std::string& file_path) {
 	
 	std::string buffer(size, '\0');
 	if (!file.read(&buffer[0], size)) {
-		LOG_ERROR("Failed to read file: " + file_path);
+		log_error("Failed to read file: " + file_path);
 		return "";
 	}
 	
@@ -407,19 +401,44 @@ std::string WebServer::readFile(const std::string& file_path) {
 
 std::string WebServer::handleGetRequest(const HttpRequest& request) {
 	std::string uri = request.getUri();
+	std::string host = request.getHeader("Host");
+
+	const ServerConfig* server_config = _config->findServerConfig("127.0.0.1", 8080, "");
+	if (!server_config) {
+		log_error("no server config found");
+		return generateErrorResponse(500, "Internal Server Error");
+	}
+
+	const LocationConfig* location_config = _config->findLocationConfig(*server_config, uri);
 	
-	if (_cgi_handler && _cgi_handler->isCgiRequest(uri)) {		//tte
-	return _cgi_handler->handleCgiRequest(request);
-	}														//tte
+
+	if (location_config) {	// checkin method permissions
+		bool method_allowed = false;
+		for (size_t i = 0; i < location_config->allowed_methods.size(); ++i) {
+			if (location_config->allowed_methods[i] == "GET") {
+				method_allowed = true;
+				break;
+			}
+		}
+		if (!method_allowed)
+			return generateErrorResponse(405, "Method Not Allowed");
+	}
+
+	if (_cgi_handler && _cgi_handler->isCgiRequest(uri))
+		return _cgi_handler->handleCgiRequest(request);
+
+	std::string root = server_config->root;
+	if (location_config && !location_config->root.empty())
+		root = location_config->root;
 	
-    std::string file_path = getFilePath(uri);
+	std::string file_path = getFilePathWithRoot(uri, root);
     
     if (!fileExists(file_path)) {
         return generateErrorResponse(404, "Not Found");
     }
     
     if (isDirectory(file_path)) {
-        return handleDirectoryRequest(file_path, uri);
+        return handleDirectoryRequest(file_path, uri, location_config);
     }
     
     if (access(file_path.c_str(), R_OK) != 0) {
@@ -434,26 +453,36 @@ std::string WebServer::handleGetRequest(const HttpRequest& request) {
     return generateSuccessResponse(content, getContentType(file_path));
 }
 
-std::string WebServer::handleDirectoryRequest(const std::string& dir_path, const std::string& /* uri */) {
-    std::vector<std::string> index_files;
-    index_files.push_back("index.html");
-    index_files.push_back("index.htm");
-    
-    for (size_t i = 0; i < index_files.size(); ++i) {
-        std::string index_path = dir_path;
-        if (index_path[index_path.length() - 1] != '/') {
-            index_path += "/";
-        }
-        index_path += index_files[i];
-        
-        if (fileExists(index_path) && access(index_path.c_str(), R_OK) == 0) {
-            std::string content = readFile(index_path);
-            if (!content.empty()) {
-                return generateSuccessResponse(content, "text/html");
-            }
-        }
-    }
-    return generateErrorResponse(404, "Not Found");
+
+
+std::string WebServer::handleDirectoryRequest(const std::string& dir_path, const std::string& uri,
+			const LocationConfig* location_config) {
+	std::vector<std::string> index_files;
+	
+	if (location_config && !location_config->index.empty())
+		index_files.push_back(location_config->index);
+	else {
+		index_files.push_back("index.html");
+		index_files.push_back("index.htm");
+	}
+	
+	for (size_t i = 0; i < index_files.size(); ++i) {
+		std::string index_path = dir_path;
+		if (index_path[index_path.length() - 1] != '/')
+			index_path += "/";
+		index_path += index_files[i];
+		
+		if (fileExists(index_path) && access(index_path.c_str(), R_OK) == 0) {
+			std::string content = readFile(index_path);
+			if (!content.empty())
+				return generateSuccessResponse(content, "text/html");
+		}
+	}
+
+	if (location_config && location_config->autoindex)	// autoindex check
+		return generateDirectoryListing(dir_path, uri);
+	
+	return generateErrorResponse(404, "Not Found");
 }
 
 std::string WebServer::handleHeadRequest(const HttpRequest& request) {
@@ -482,15 +511,39 @@ std::string WebServer::generateSuccessResponse(const std::string& content, const
 }
 
 std::string WebServer::handlePostRequest(const HttpRequest& request) {
-    std::string uri = request.getUri();
-    std::string body = request.getBody();
-    
-    std::cout << "POST request for: " << uri << std::endl;
-    std::cout << "Body length: " << body.length() << std::endl;
-    
+	std::string uri = request.getUri();
+
+	const ServerConfig* server_config = _config->findServerConfig("127.0.0.1", 8080, "");
+	if (!server_config)
+		return generateErrorResponse(500, "Internal Server Error");
+
+	const LocationConfig* location_config = _config->findLocationConfig(*server_config, uri);
+
+	if (location_config) {
+		bool method_allowed = false;
+		for (size_t i = 0; i < location_config->allowed_methods.size(); ++i) {
+			if (location_config->allowed_methods[i] == "POST") {
+				method_allowed = true;
+				break;
+			}
+		}
+		if (!method_allowed)
+			return generateErrorResponse(405, "Method Not Allowed");
+	}
+
+	size_t max_body_size = server_config->client_max_body_size;
+	if (request.getBody().length() > max_body_size)
+		return generateErrorResponse(413, "Request Entity Too Large");
+
 	if (_cgi_handler && _cgi_handler->isCgiRequest(uri))
 		return _cgi_handler->handleCgiRequest(request);
+
+	if (location_config && !location_config->upload_path.empty())
+		return handleFileUploadToLocation(request, location_config);
 	
+	std::string body = request.getBody();
+	log_info("POST request for: " + uri + " (body: " + toString(body.length()) + " bytes)");
+
     if (uri.find("/upload") == 0)
         return handleFileUpload(request);
     
@@ -501,38 +554,57 @@ std::string WebServer::handlePostRequest(const HttpRequest& request) {
 }
 
 std::string WebServer::handleDeleteRequest(const HttpRequest& request) {
-    std::string uri = request.getUri();
-    std::string file_path = getFilePath(uri);
-    
-    std::cout << "DELETE request for: " << file_path << std::endl;
-    
-    if (!fileExists(file_path)) {
-        return generateErrorResponse(404, "Not Found");
-    }
-    
-    if (isDirectory(file_path)) {
-        return generateErrorResponse(403, "Forbidden");
-    }
-    
-    std::string parent_dir = file_path.substr(0, file_path.find_last_of('/'));
-    if (access(parent_dir.c_str(), W_OK) != 0) {
-        return generateErrorResponse(403, "Forbidden");
-    }
-    
-    if (unlink(file_path.c_str()) == 0) {
+	std::string uri = request.getUri();
+	
+	const ServerConfig* server_config = _config->findServerConfig("127.0.0.1", 8080, "");
+	if (!server_config)
+		return generateErrorResponse(500, "Internal Server Error");
 
-        std::ostringstream response;
-        response << "HTTP/1.1 200 OK\r\n";
-        response << "Content-Type: text/html\r\n";
-        response << "Content-Length: 47\r\n";
-        response << "Connection: close\r\n";
-        response << "Server: Webserv/1.0\r\n";
-        response << "\r\n";
-        response << "<html><body><h1>File deleted</h1></body></html>";
-        return response.str();
-    } else {
-        return generateErrorResponse(500, "Internal Server Error");
-    }
+	const LocationConfig* location_config = _config->findLocationConfig(*server_config, uri);
+
+	if (location_config) {
+		bool method_allowed = false;
+		for (size_t i = 0; i < location_config->allowed_methods.size(); ++i) {
+			if (location_config->allowed_methods[i] == "DELETE") {
+				method_allowed = true;
+				break;
+			}
+		}
+		if (!method_allowed)
+			return generateErrorResponse(405, "Method Not Allowed");
+	}
+
+	std::string root = server_config->root;
+	if (location_config && !location_config->root.empty())
+		root = location_config->root;
+	
+	std::string file_path = getFilePathWithRoot(uri, root);
+	
+	log_info("DELETE request for: " + file_path);
+	
+	if (!fileExists(file_path))
+		return generateErrorResponse(404, "Not Found");
+	
+	if (isDirectory(file_path))
+		return generateErrorResponse(403, "Forbidden - Cannot delete directory");
+	
+	std::string parent_dir = file_path.substr(0, file_path.find_last_of('/'));
+	if (access(parent_dir.c_str(), W_OK) != 0)
+		return generateErrorResponse(403, "Forbidden - No write permission");
+	
+	if (unlink(file_path.c_str()) == 0) {
+		std::ostringstream response;
+		response << "HTTP/1.1 200 OK\r\n";
+		response << "Content-Type: text/html\r\n";
+		response << "Content-Length: 47\r\n";
+		response << "Connection: close\r\n";
+		response << "Server: Webserv/1.0\r\n";
+		response << "\r\n";
+		response << "<html><body><h1>File deleted</h1></body></html>";
+		return response.str();
+	} else {
+		return generateErrorResponse(500, "Internal Server Error - Delete failed");
+	}
 }
 
 
@@ -603,7 +675,7 @@ std::string WebServer::handlePostEcho(const HttpRequest& request) {
 }
 
 void WebServer::cleanup() {
-	LOG_INFO("Cleaning up WebServer...");
+	log_info("Cleaning up WebServer...");
 	for (size_t i = 0; i < _server_sockets.size(); ++i) {
 		close(_server_sockets[i]);
 		LOG_DEBUG("Closed server socket " + toString(_server_sockets[i]));
@@ -611,5 +683,62 @@ void WebServer::cleanup() {
 	
 	delete _config;
 	_config = NULL;
-	LOG_INFO("WebServer cleanup complete");
+	log_info("WebServer cleanup complete");
+}
+
+std::string WebServer::handleFileUploadToLocation(const HttpRequest& request, const LocationConfig* location_config) {
+	std::string body = request.getBody();
+	std::string upload_dir = location_config->upload_path;
+
+	mkdir(upload_dir.c_str(), 0755);
+	
+	std::ostringstream filename;
+	filename << "upload_" << time(NULL) << ".txt";
+	
+	std::string file_path = upload_dir + "/" + filename.str();
+	
+	std::ofstream outfile(file_path.c_str());
+	if (!outfile.is_open())
+		return generateErrorResponse(500, "Internal Server Error - Cannot create file");
+	
+	outfile << body;
+	outfile.close();
+	
+	std::ostringstream html;
+	html << "<html><body><h1>File uploaded successfully</h1>";
+	html << "<p>Saved to: " << location_config->upload_path << "/" << filename.str() << "</p>";
+	html << "<p><a href='/'>Back to home</a></p>";
+	html << "</body></html>";
+	
+	return generateSuccessResponse(html.str(), "text/html");
+}
+
+std::string WebServer::generateDirectoryListing(const std::string& dir_path, const std::string& uri) {
+	std::ostringstream html;
+	
+	html << "<html><head><title>Index of " << uri << "</title></head><body>";
+	html << "<h1>Index of " << uri << "</h1><hr>";
+	html << "<pre>";
+	
+	if (uri != "/")	// add parent directory link if not root
+		html << "<a href=\"../\">../</a>\n";
+	
+	DIR* dir = opendir(dir_path.c_str());
+	if (dir != NULL) {
+		struct dirent* entry;
+		while ((entry = readdir(dir)) != NULL) {
+			std::string name = entry->d_name;
+			if (name == "." || (name[0] == '.' && name != "..")) //skipps hidden files and current dir
+				continue;
+				
+			html << "<a href=\"" << name << "\">" << name << "</a>\n";
+		}
+		closedir(dir);
+	} else {
+		html << "<i>Directory listing unavailable</i>\n";
+	}
+	
+	html << "</pre><hr></body></html>";
+	
+	return generateSuccessResponse(html.str(), "text/html");
 }
