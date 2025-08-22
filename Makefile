@@ -5,7 +5,8 @@ SRCDIR = src
 INCDIR = include
 OBJDIR = obj
 
-SOURCES = main.cpp WebServer.cpp HttpRequest.cpp Config.cpp ConfigUtils.cpp utils.cpp
+SOURCES = main.cpp WebServer.cpp HttpRequest.cpp\
+	 Config.cpp ConfigUtils.cpp utils.cpp Cgi.cpp
 OBJECTS = $(SOURCES:%.cpp=$(OBJDIR)/%.o)
 SRCFILES = $(addprefix $(SRCDIR)/, $(SOURCES))
 
