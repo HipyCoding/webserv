@@ -41,7 +41,8 @@ class WebServer {
 	std::map<int, std::string> _client_buffers; // incoming data buffers
 	std::map<int, std::string> _client_write_buffers; // outgoing buffer
 	std::map<int, bool> _clients_ready_to_write;     // check clients with queued responses
-
+	std::map<int, time_t> _client_timeouts;
+	static const int REQUEST_TIMEOUT = 30;
     // sockets
     int createServerSocket(const std::string& host, int port);
 
@@ -51,6 +52,7 @@ class WebServer {
 	void handleClientWrite(int client_fd, int poll_index);	// sends queued response data to client (called when POLLOUT ready)
 	void queueResponse(int client_fd, const std::string& response);
 	void cleanupClient(int client_fd, int poll_index);
+	void checkClientTimeouts();
 
     // http request/resopnse
     std::string generateResponse(const HttpRequest& request);
@@ -77,7 +79,6 @@ class WebServer {
 	std::string getFilePath(const std::string& uri);
 	std::string getFilePathWithRoot(const std::string& uri, const std::string& root);
 	size_t getContentLength(const std::string& headers);
-	bool fileExists(const std::string& path);
 	bool isDirectory(const std::string& path);
 	std::string readFile(const std::string& file_path);
 

@@ -43,3 +43,7 @@ void log_error(const std::string &message);
 // string utils
 std::string int_to_string(int value);
 std::string size_t_to_string(size_t value);
+
+//cgi utils
+
+bool fileExists(const std::string& path);

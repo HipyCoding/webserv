@@ -11,6 +11,7 @@
 /* ************************************************************************** */
 
 #include "utils.hpp"
+#include <fstream>
 
 std::string get_timestamp()
 {
@@ -53,4 +54,11 @@ std::string size_t_to_string(size_t value){
 	std::ostringstream oss;
 	oss << value;
 	return oss.str();
+}
+
+bool fileExists(const std::string& path) {
+	std::ifstream file(path.c_str());
+	bool exists = file.good();
+	file.close();
+	return exists;
 }

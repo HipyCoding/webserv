@@ -13,6 +13,7 @@
 #include "WebServer.hpp"
 #include "Config.hpp"
 #include "HttpRequest.hpp"
+#include "utils.hpp"
 #include <sstream>
 
 WebServer::WebServer() : _config(NULL) {
@@ -99,6 +100,7 @@ int WebServer::createServerSocket(const std::string& host, int port) {
 void WebServer::run() {
 	log_info("Server entering main loop...");
 	while (true) {
+		checkClientTimeouts();
 		// set up poll events for both read and write
 		for (size_t i = 0; i < _poll_fds.size(); ++i) {
 			_poll_fds[i].events = POLLIN;
@@ -111,7 +113,7 @@ void WebServer::run() {
 		}
 		
 		LOG_DEBUG("Calling poll with " + size_t_to_string(_poll_fds.size()) + " file descriptors...");
-		int poll_count = poll(&_poll_fds[0], _poll_fds.size(), -1);
+		int poll_count = poll(&_poll_fds[0], _poll_fds.size(), 2000);
 		LOG_DEBUG("Poll returned: " + size_t_to_string(poll_count));
 		
 		if (poll_count == -1) {
@@ -145,6 +147,27 @@ void WebServer::run() {
 	}
 }
 
+void WebServer::checkClientTimeouts() {
+	time_t current_time = time(NULL);
+	std::vector<int> timed_out_clients;
+
+	for (std::map <int, time_t>::iterator it = _client_timeouts.begin();
+		it != _client_timeouts.end(); ++it) {
+			if (current_time - it->second > REQUEST_TIMEOUT) {
+				timed_out_clients.push_back(it->first);
+			}
+		}
+	for (size_t i = 0; i < timed_out_clients.size(); i++) {
+		for(size_t j = 0; j < _poll_fds.size(); ++j) {
+			if (_poll_fds[j].fd == timed_out_clients[i]) {
+				log_info("Client " + size_t_to_string(timed_out_clients[i]) + " timed out");
+				cleanupClient(timed_out_clients[i], j);
+				break ;
+			}
+		}
+	}
+}
+
 void WebServer::handleNewConnection(int server_fd) {
 	struct sockaddr_in client_addr;
 	socklen_t client_len = sizeof(client_addr);
@@ -171,6 +194,7 @@ void WebServer::handleNewConnection(int server_fd) {
 	_poll_fds.push_back(pfd);
 	
 	_client_buffers[client_fd] = "";
+	_client_timeouts[client_fd] = time(NULL);
 
 	LOG_DEBUG("Client " + size_t_to_string(client_fd) + " added to poll list");
 }
@@ -277,6 +301,7 @@ void WebServer::cleanupClient(int client_fd, int poll_index) {
 	_client_buffers.erase(client_fd);
 	_client_write_buffers.erase(client_fd);
 	_clients_ready_to_write.erase(client_fd);
+	_client_timeouts.erase(client_fd);
 	log_info("Client " + size_t_to_string(client_fd) + " connection closed");
 }
 
@@ -411,11 +436,6 @@ std::string WebServer::getFilePathWithRoot(const std::string& uri, const std::st
 		clean_uri.erase(pos, 1);
 	
 	return root + clean_uri;
-}
-
-bool WebServer::fileExists(const std::string& path) {
-	struct stat buffer;
-	return (stat(path.c_str(), &buffer) == 0);
 }
 
 bool WebServer::isDirectory(const std::string& path) {
@@ -664,10 +684,10 @@ std::string WebServer::handleDeleteRequest(const HttpRequest& request) {
 
 std::string WebServer::handleFileUpload(const HttpRequest& request) {
     std::string body = request.getBody();
-    std::string content_type = request.getHeader("Content-Type");
-    
     std::string upload_dir = "./www/uploads";
     
+	mkdir(upload_dir.c_str(), 0755);
+
     std::ostringstream filename;
     filename << "upload_" << time(NULL) << ".txt";
     
@@ -680,22 +700,21 @@ std::string WebServer::handleFileUpload(const HttpRequest& request) {
     
     outfile << body;
     outfile.close();
+
+	std::ostringstream html_content;
+	html_content << "<html><body><h1>File uploaded sucessfully<h1>";
+	html_content << "<p> Saved as: " << filename.str() << "</p></body></html>";
     
     std::ostringstream response;
     response << "HTTP/1.1 201 Created\r\n";
     response << "Content-Type: text/html\r\n";
+	response << "Content-Lenght: " << html_content.str().length() << "\r\n";
     response << "Location: /uploads/" << filename.str() << "\r\n";
     response << "Connection: close\r\n";
     response << "Server: Webserv/1.0\r\n";
-    response << "\r\n";
-    response << "<html><body><h1>File uploaded successfully</h1>";
-    response << "<p>Saved as: " << filename.str() << "</p></body></html>";
-    
-    std::string resp = response.str();
-    response.str("");
-    response << "Content-Length: " << (resp.length() - resp.find("\r\n\r\n") - 4) << "\r\n";
-    
-    return resp;
+	response << html_content.str();
+
+    return response.str();
 }
 
 std::string WebServer::handleRedirect(const LocationConfig* location) {

@@ -1,4 +1,3 @@
-
 #include "Cgi.hpp"
 #include "utils.hpp"
 
@@ -47,12 +46,11 @@ std::string CgiHandler::handleCgiRequest(const HttpRequest& request) const {
 	
 	log_debug("cgi request for: " + script_path);
 
-	struct stat buffer;
-	if (stat(script_path.c_str(), &buffer) != 0) { // if dont exists
+	if(!fileExists(script_path)) {
 		log_error("cgi script not found: " + script_path);
 		return generateErrorResponse(404, "CGI Script Not Found");
 	}
-	if (!isExecutable(script_path)){
+	if (!isExecutable(script_path)) {
 		log_error("cgi script not executable: " + script_path);
 		return generateErrorResponse(403, "CGI Script Not Executable");
 	}
@@ -85,21 +83,6 @@ std::string CgiHandler::execute(const std::string& script_path,
 	log_error("error in child");
 	exit(1);
 	}
-
-	// close(pipe_stdout[1]);
-	// close(pipe_stdin[0]);
-	// close(pipe_stdin[1]);
-		
-	// // PLACEHOLDER: just read something simple
-	// char buffer[1024];
-	// read(pipe_stdout[0], buffer, sizeof(buffer));
-	// close(pipe_stdout[0]);
-		
-	// int status;
-	// waitpid(pid, &status, 0);
-		
-	// // SIMPLE response for now
-	// return "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-Length: 46\r\n\r\n<html><body><h1>basic cgi test</h1></body></html>";
 	return handleParentProcess(pipe_stdout, pipe_stdin, request, pid);
 }
 
@@ -283,33 +266,6 @@ std::string CgiHandler::handleParentProcess(int pipe_stdout[2], int pipe_stdin[2
 	return parseCgiOutput(output);
 }
 
-// std::string CgiHandler::handleParentProcess(int pipe_stdout[2], int pipe_stdin[2], 
-// 				const HttpRequest& request, pid_t child_pid) const {
-// 	close(pipe_stdout[1]);
-// 	close(pipe_stdin[0]);
-	
-// 	fcntl(pipe_stdout[0], F_SETFL, O_NONBLOCK);
-// 	fcntl(pipe_stdin[1], F_SETFL, O_NONBLOCK);
-
-// 	// writes post to script stdin if needed
-// 	if (request.getMethod() == POST && !request.getBody().empty()) {
-// 		const std::string& body = request.getBody();
-// 		write(pipe_stdin[1], body.c_str(), body.length());
-// 	}
-// 	close(pipe_stdin[1]);
-
-// 	std::string output = readFromPipe(pipe_stdout[0]); //read script output first
-// 	close(pipe_stdout[0]);
-// 	log_debug("cgi output length: " + size_t_to_string(output.length()));
-
-// 	int status;
-// 	waitpid(child_pid, &status, 0);
-	
-// 	if (WEXITSTATUS(status) != 0)
-// 		return generateErrorResponse(500, "CGI Script Execution Error");
-
-// 	return parseCgiOutput(output);
-// }
 
 std::vector<std::string> CgiHandler::setupEnvironment(const HttpRequest& request, const std::string& script_path) const {
 	std::vector<std::string> env_vars;
