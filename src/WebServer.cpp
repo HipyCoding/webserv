@@ -6,7 +6,7 @@
 /*   By: christian <christian@student.42.fr>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/03 07:04:49 by christian         #+#    #+#             */
-/*   Updated: 2025/08/23 15:13:20 by christian        ###   ########.fr       */
+/*   Updated: 2025/08/23 16:16:04 by christian        ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -296,8 +296,6 @@ std::string WebServer::generateResponse(const HttpRequest& request) {
     
     if (request.getMethod() == GET) {
         return handleGetRequest(request);
-    } else if (request.getMethod() == HEAD) {
-        return handleHeadRequest(request);
     } else if (request.getMethod() == POST) {
         return handlePostRequest(request);
     } else if (request.getMethod() == DELETE) {
@@ -514,17 +512,6 @@ std::string WebServer::handleDirectoryRequest(const std::string& dir_path, const
 		return generateDirectoryListing(dir_path, uri);
 	
 	return generateErrorResponse(404, "Not Found");
-}
-
-std::string WebServer::handleHeadRequest(const HttpRequest& request) {
-    std::string response = handleGetRequest(request);
-
-    size_t header_end = response.find("\r\n\r\n");
-    if (header_end != std::string::npos) {
-        return response.substr(0, header_end + 4);
-    }
-    
-    return response;
 }
 
 std::string WebServer::generateSuccessResponse(const std::string& content, const std::string& content_type) {

@@ -9,7 +9,6 @@ enum HttpMethod {
     GET,
     POST,
     DELETE,
-    HEAD,
     UNKNOWN
 };
 
