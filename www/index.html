@@ -39,9 +39,13 @@
         <h3>Custom Error Pages Testing:</h3>
         <div class="test-links">
             <a href="/nonexistent">404 Custom Error</a>
-            <a href="/error/404.html">View 404 Page Direct</a>
-            <a href="/error/500.html">View 500 Page Direct</a>
-            <a href="/forbidden-test">403 Test (if configured)</a>
+            <!-- <a href="/error/400.html">View 400 Error Page</a> -->
+            <!-- <a href="/error/403.html">View 403 Error Page</a> -->
+            <a href="/error/404.html">View 404 Error Page</a>
+            <!-- <a href="/error/405.html">View 405 Error Page</a> -->
+            <!-- <a href="/error/413.html">View 413 Error Page</a> -->
+            <!-- <a href="/error/414.html">View 414 Error Page</a> -->
+            <!-- <a href="/error/500.html">View 500 Error Page</a> -->
         </div>
         
         <h3>CGI Testing:</h3>
@@ -56,7 +60,7 @@
         </div>
         
         <div class="warning">
-            <strong>Custom Error Pages:</strong> The server is configured to use custom error pages at /error/404.html and /error/500.html. 
+            <strong>Custom Error Pages:</strong> The server is configured to use custom error pages for all major HTTP errors (400, 403, 404, 405, 413, 414, 500). 
             Test the "404 Custom Error" link to see your custom 404 page in action!
         </div>
     </div>
@@ -69,7 +73,7 @@
             <li class="status-item">[OK] Location-based routing active</li>
             <li class="status-item">[OK] Method restrictions configured</li>
             <li class="status-item">[OK] CGI extensions mapped (.py)</li>
-            <li class="status-item">[OK] Custom error pages configured (404.html, 500.html)</li>
+            <li class="status-item">[OK] Custom error pages configured (400, 403, 404, 405, 413, 414, 500)</li>
         </ul>
     </div>
 

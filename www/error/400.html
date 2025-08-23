@@ -1,11 +1,11 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Page Not Found - Webserv</title>
+    <title>Bad Request - Webserv</title>
     <style>
         body { font-family: Arial, sans-serif; text-align: center; margin-top: 50px; background: #f8f9fa; }
         .container { max-width: 600px; margin: 0 auto; padding: 40px; }
-        .error-code { font-size: 72px; color: #e74c3c; font-weight: bold; }
+        .error-code { font-size: 72px; color: #f39c12; font-weight: bold; }
         .error-message { font-size: 24px; color: #2c3e50; margin: 20px 0; }
         .description { font-size: 16px; color: #7f8c8d; margin: 30px 0; }
         .home-link { 
@@ -22,11 +22,11 @@
 </head>
 <body>
     <div class="container">
-        <div class="error-code">404</div>
-        <div class="error-message">Oops! Page Not Found</div>
+        <div class="error-code">400</div>
+        <div class="error-message">Bad Request</div>
         <div class="description">
-            The page you're looking for doesn't exist on this server.<br>
-            It might have been moved, deleted, or you entered the wrong URL.
+            The request could not be understood by the server.<br>
+            Please check your request syntax and try again.
         </div>
         <a href="/" class="home-link">Back to Home</a>
     </div>
