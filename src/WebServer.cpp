@@ -152,14 +152,14 @@ void WebServer::handleNewConnection(int server_fd) {
 
 	int client_fd = accept(server_fd, (struct sockaddr*)&client_addr, &client_len);
 	if (client_fd == -1) {
-		log_error("Accept failed: " + std::string(strerror(errno)));
+		log_error("Accept failed");
 		return;
 	}
 
 	log_info("New client connected: fd = " + size_t_to_string(client_fd));
 	
 	if (fcntl(client_fd, F_SETFL, O_NONBLOCK) == -1) {
-		log_error("fcntl failed: " + std::string(strerror(errno)));
+		log_error("fcntl failed");
 		close(client_fd);
 		return;
 	}
@@ -207,12 +207,10 @@ void WebServer::handleClientData(int client_fd, int poll_index) {
 	LOG_DEBUG("recv() returned " + size_t_to_string(bytes_read) + " bytes");
 
 	if (bytes_read <= 0) {
-		if (bytes_read == 0) {
+		if (bytes_read == 0)
 			log_info("Client " + size_t_to_string(client_fd) + " disconnected");
-		} else {
-			// log_error("recv() error: " + std::string(strerror(errno)));
+		else
 			log_error("recv() failed for client " + size_t_to_string(client_fd));
-		}
 		cleanupClient(client_fd, poll_index);
 		return;
 	}
@@ -440,6 +438,12 @@ std::string WebServer::handleGetRequest(const HttpRequest& request) {
 
 	const LocationConfig* location_config = _config->findLocationConfig(*server_config, uri);
 	
+	if (location_config){
+		std::string redirect_response = handleRedirect(location_config);
+		if (!redirect_response.empty())
+			return redirect_response;
+	}
+
 
 	if (location_config) {	// checkin method permissions
 		bool method_allowed = false;
@@ -538,6 +542,11 @@ std::string WebServer::handlePostRequest(const HttpRequest& request) {
 	const LocationConfig* location_config = _config->findLocationConfig(*server_config, uri);
 
 	if (location_config) {
+		std::string redirect_response = handleRedirect(location_config);
+		if (!redirect_response.empty())
+			return redirect_response;
+	}
+	if (location_config) {
 		bool method_allowed = false;
 		for (size_t i = 0; i < location_config->allowed_methods.size(); ++i) {
 			if (location_config->allowed_methods[i] == "POST") {
@@ -579,6 +588,12 @@ std::string WebServer::handleDeleteRequest(const HttpRequest& request) {
 		return generateErrorResponse(500, "Internal Server Error");
 
 	const LocationConfig* location_config = _config->findLocationConfig(*server_config, uri);
+
+	if (location_config) {
+		std::string redirect_response = handleRedirect(location_config);
+		if(!redirect_response.empty())
+			return redirect_response;
+	}
 
 	if (location_config) {
 		bool method_allowed = false;
@@ -660,6 +675,44 @@ std::string WebServer::handleFileUpload(const HttpRequest& request) {
     response << "Content-Length: " << (resp.length() - resp.find("\r\n\r\n") - 4) << "\r\n";
     
     return resp;
+}
+
+std::string WebServer::handleRedirect(const LocationConfig* location) {
+    if (!location || location->redirect.empty()) {
+        return "";
+    }
+    
+    std::string redirect_url = location->redirect;
+    
+    int status_code = 301;
+    if (redirect_url.find("301 ") == 0) {
+        status_code = 301;
+        redirect_url = redirect_url.substr(4);
+    } else if (redirect_url.find("302 ") == 0) {
+        status_code = 302;
+        redirect_url = redirect_url.substr(4);
+    } else if (redirect_url.find("307 ") == 0) {
+        status_code = 307;
+        redirect_url = redirect_url.substr(4);
+    }
+    
+    std::string status_text;
+    switch (status_code) {
+        case 301: status_text = "Moved Permanently"; break;
+        case 302: status_text = "Found"; break;
+        case 307: status_text = "Temporary Redirect"; break;
+        default: status_text = "Moved Permanently"; status_code = 301; break;
+    }
+    
+    std::ostringstream response;
+    response << "HTTP/1.1 " << status_code << " " << status_text << "\r\n";
+    response << "Location: " << redirect_url << "\r\n";
+    response << "Content-Length: 0\r\n";
+    response << "Connection: close\r\n";
+    response << "Server: Webserv/1.0\r\n";
+    response << "\r\n";
+    
+    return response.str();
 }
 
 std::string WebServer::handleFormSubmission(const HttpRequest& request) {

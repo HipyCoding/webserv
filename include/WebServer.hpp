@@ -58,6 +58,7 @@ class WebServer {
 	std::string handlePostRequest(const HttpRequest& request);
 	std::string handleDeleteRequest(const HttpRequest& request);
 	std::string handleHeadRequest(const HttpRequest& request);
+	std::string handleRedirect(const LocationConfig* location);
 
     // special requests
     std::string handleFileUpload(const HttpRequest& request);
