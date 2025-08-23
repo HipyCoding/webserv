@@ -31,45 +31,54 @@ class   CgiHandler;
 
 class WebServer {
 	private:
-    CgiHandler* _cgi_handler;  // tte
-
-    std::vector<struct pollfd> _poll_fds;
-    std::vector<int> _server_sockets;
-    std::map<int, std::string> _client_buffers;
+    // classes
+    CgiHandler* _cgi_handler;
     Config* _config;
-    
+
+    // poll functionality
+	std::vector<struct pollfd> _poll_fds;
+	std::vector<int> _server_sockets;
+	std::map<int, std::string> _client_buffers; // incoming data buffers
+	std::map<int, std::string> _client_write_buffers; // outgoing buffer
+	std::map<int, bool> _clients_ready_to_write;     // check clients with queued responses
+
+    // sockets
     int createServerSocket(const std::string& host, int port);
+
+    // connection handling
     void handleNewConnection(int server_fd);
-    void handleClientData(int client_fd, int poll_index);
-    void sendResponse(int client_fd, const std::string& response);
+	void handleClientData(int client_fd, int poll_index);	// processes incoming data from client (called when POLLIN ready)
+	void handleClientWrite(int client_fd, int poll_index);	// sends queued response data to client (called when POLLOUT ready)
+	void queueResponse(int client_fd, const std::string& response);
+	void cleanupClient(int client_fd, int poll_index);
+
+    // http request/resopnse
     std::string generateResponse(const HttpRequest& request);
-    std::string generateErrorResponse(int status_code, const std::string& status_text);
-    std::string getStatusMessage(int code);
-    std::string toString(size_t value);
-    size_t getContentLength(const std::string& headers);
+	std::string handleGetRequest(const HttpRequest& request);
+	std::string handlePostRequest(const HttpRequest& request);
+	std::string handleDeleteRequest(const HttpRequest& request);
+	std::string handleHeadRequest(const HttpRequest& request);
 
-    std::string getContentType(const std::string& file_path);
-    std::string getFilePath(const std::string& uri);
-    bool fileExists(const std::string& path);
-    bool isDirectory(const std::string& path);
-    std::string readFile(const std::string& file_path);
-
-    std::string handleGetRequest(const HttpRequest& request);
-    std::string handlePostRequest(const HttpRequest& request);
-    std::string handleDeleteRequest(const HttpRequest& request);
-    std::string handleDirectoryRequest(const std::string& dir_path, const std::string& uri);
-    std::string generateSuccessResponse(const std::string& content, const std::string& content_type);
-
-    std::string handleHeadRequest(const HttpRequest& request);
+    // special requests
     std::string handleFileUpload(const HttpRequest& request);
-    std::string handleFormSubmission(const HttpRequest& request);
-    std::string handlePostEcho(const HttpRequest& request);
-
-    std::string getFilePathWithRoot(const std::string& uri, const std::string& root);
+	std::string handleFileUploadToLocation(const HttpRequest& request, const LocationConfig* location_config);
+	std::string handleFormSubmission(const HttpRequest& request);
+	std::string handlePostEcho(const HttpRequest& request);
+	std::string handleDirectoryRequest(const std::string& dir_path, const std::string& uri);
 	std::string handleDirectoryRequest(const std::string& dir_path, const std::string& uri, const LocationConfig* location_config);
 	std::string generateDirectoryListing(const std::string& dir_path, const std::string& uri);
-	std::string handleFileUploadToLocation(const HttpRequest& request, const LocationConfig* location_config);
 
+    // server utilities
+    std::string generateSuccessResponse(const std::string& content, const std::string& content_type);
+	std::string generateErrorResponse(int status_code, const std::string& status_text);
+	std::string getStatusMessage(int code);
+	std::string getContentType(const std::string& file_path);
+	std::string getFilePath(const std::string& uri);
+	std::string getFilePathWithRoot(const std::string& uri, const std::string& root);
+	size_t getContentLength(const std::string& headers);
+	bool fileExists(const std::string& path);
+	bool isDirectory(const std::string& path);
+	std::string readFile(const std::string& file_path);
 
 public:
     WebServer();
