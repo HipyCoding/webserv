@@ -155,30 +155,161 @@ std::vector<std::string> env_vars = setupEnvironment(request, script_path);
 	exit(1);
 }
 
+bool CgiHandler::waitForCgiCompletion(pid_t child_pid) const {
+	int status;
+	waitpid(child_pid, &status, 0);
+	
+	if (WEXITSTATUS(status) != 0) {
+		log_error("CGI script exited with non-zero status");
+		return false;
+	}
+	
+	return true;
+}
+
+bool CgiHandler::checkCgiProcessFinished(pid_t child_pid, int pipe_stdout, std::string& output) const {
+	int status;
+	pid_t result = waitpid(child_pid, &status, WNOHANG);
+	
+	if (result == child_pid) {
+		char buffer[1024];
+		ssize_t bytes_read;
+		while ((bytes_read = read(pipe_stdout, buffer, sizeof(buffer) - 1)) > 0) {
+			buffer[bytes_read] = '\0';
+			output += buffer;
+		}
+		return true;
+	}
+	
+	return false;
+}
+
+bool CgiHandler::handleCgiStdinWrite(int pipe_stdin, const std::string& body, 
+									size_t& bytes_written, bool& stdin_closed, 
+									std::vector<struct pollfd>& cgi_fds) const {
+	if (bytes_written < body.length()) {
+		ssize_t written = write(pipe_stdin, 
+			body.c_str() + bytes_written, 
+			body.length() - bytes_written);
+		
+		if (written > 0) // negative = EAGAIN/EWOULDBLOCK - continue polling
+			bytes_written += written;
+		
+	}
+
+	if (bytes_written >= body.length()) {	// check if finished
+		close(pipe_stdin);
+		stdin_closed = true;
+		cgi_fds.pop_back();  // remove stdin from polling
+		return false;  // finished writing
+	}
+	return true;
+}
+
+bool CgiHandler::handleCgiStdoutRead(int pipe_stdout, std::string& output) const {
+	char buffer[1024];
+	ssize_t bytes_read = read(pipe_stdout, buffer, sizeof(buffer) - 1);
+	
+	if (bytes_read > 0) {
+		buffer[bytes_read] = '\0';
+		output += buffer;
+		return true;
+	} else if (bytes_read == 0) // means EOF
+		return false;
+	return true;
+}
+
+void CgiHandler::setupCgiPipes(std::vector<struct pollfd>& cgi_fds, int pipe_stdout[2], 
+							   int pipe_stdin[2], const HttpRequest& request) const {
+	
+	struct pollfd stdout_fd = {pipe_stdout[0], POLLIN, 0}; // monitors stdout for reading
+	cgi_fds.push_back(stdout_fd);
+
+	if (request.getMethod() == POST && !request.getBody().empty()) { // stdin if data
+		struct pollfd stdin_fd = {pipe_stdin[1], POLLOUT, 0};
+		cgi_fds.push_back(stdin_fd);
+	}
+}
+
+void CgiHandler::closeCgiPipes(int pipe_stdout[2], int pipe_stdin[2], bool stdin_closed) const {
+	if (!stdin_closed)
+		close(pipe_stdin[1]);
+	close(pipe_stdout[0]);
+}
+
 std::string CgiHandler::handleParentProcess(int pipe_stdout[2], int pipe_stdin[2], 
 				const HttpRequest& request, pid_t child_pid) const {
 	close(pipe_stdout[1]);
 	close(pipe_stdin[0]);
 	
-	// writes post to script stdin if needed
-	if (request.getMethod() == POST && !request.getBody().empty()) {
-		const std::string& body = request.getBody();
-		write(pipe_stdin[1], body.c_str(), body.length());
-	}
-	close(pipe_stdin[1]);
+	fcntl(pipe_stdout[0], F_SETFL, O_NONBLOCK);
+	fcntl(pipe_stdin[1], F_SETFL, O_NONBLOCK);
 
-	std::string output = readFromPipe(pipe_stdout[0]); //read script output first
-	close(pipe_stdout[0]);
-	log_debug("cgi output length: " + size_t_to_string(output.length()));
-
-	int status;
-	waitpid(child_pid, &status, 0);
+	std::vector<struct pollfd> cgi_fds;
+	setupCgiPipes(cgi_fds, pipe_stdout, pipe_stdin, request);
 	
-	if (WEXITSTATUS(status) != 0)
+	// cgi communication state
+	std::string output;
+	size_t bytes_written = 0;
+	bool stdin_closed = false;
+	
+	while (true) {
+		int poll_result = poll(&cgi_fds[0], cgi_fds.size(), 5000);  // 5s timeout
+		if (poll_result == -1) {
+			log_error("CGI poll failed");
+			break;
+		}
+		if (poll_result == 0) {
+			log_error("CGI timeout");
+			break;
+		}
+		if (cgi_fds[0].revents & POLLIN) {// reading from cgi stdout
+			if (!handleCgiStdoutRead(pipe_stdout[0], output))
+				break;
+		}
+		if (cgi_fds.size() > 1 && (cgi_fds[1].revents & POLLOUT) && !stdin_closed) { //writing to cgi stdin
+			const std::string& body = request.getBody();
+			handleCgiStdinWrite(pipe_stdin[1], body, bytes_written, stdin_closed, cgi_fds);
+		}
+		if (checkCgiProcessFinished(child_pid, pipe_stdout[0], output))
+			break;
+	}
+
+	closeCgiPipes(pipe_stdout, pipe_stdin, stdin_closed);
+	
+	if (!waitForCgiCompletion(child_pid))
 		return generateErrorResponse(500, "CGI Script Execution Error");
 
 	return parseCgiOutput(output);
 }
+
+// std::string CgiHandler::handleParentProcess(int pipe_stdout[2], int pipe_stdin[2], 
+// 				const HttpRequest& request, pid_t child_pid) const {
+// 	close(pipe_stdout[1]);
+// 	close(pipe_stdin[0]);
+	
+// 	fcntl(pipe_stdout[0], F_SETFL, O_NONBLOCK);
+// 	fcntl(pipe_stdin[1], F_SETFL, O_NONBLOCK);
+
+// 	// writes post to script stdin if needed
+// 	if (request.getMethod() == POST && !request.getBody().empty()) {
+// 		const std::string& body = request.getBody();
+// 		write(pipe_stdin[1], body.c_str(), body.length());
+// 	}
+// 	close(pipe_stdin[1]);
+
+// 	std::string output = readFromPipe(pipe_stdout[0]); //read script output first
+// 	close(pipe_stdout[0]);
+// 	log_debug("cgi output length: " + size_t_to_string(output.length()));
+
+// 	int status;
+// 	waitpid(child_pid, &status, 0);
+	
+// 	if (WEXITSTATUS(status) != 0)
+// 		return generateErrorResponse(500, "CGI Script Execution Error");
+
+// 	return parseCgiOutput(output);
+// }
 
 std::vector<std::string> CgiHandler::setupEnvironment(const HttpRequest& request, const std::string& script_path) const {
 	std::vector<std::string> env_vars;
