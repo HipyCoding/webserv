@@ -337,9 +337,30 @@ size_t WebServer::getContentLength(const std::string& headers) {
 }
 
 std::string WebServer::generateErrorResponse(int status_code, const std::string& status_text) {
-	std::string body = "<html><body>";
-	body += "<h1>" + size_t_to_string(status_code) + " " + status_text + "</h1>";
-	body += "</body></html>";
+	std::string body;
+	
+	// Try to get custom error page from config
+	const ServerConfig* server_config = _config->findServerConfig("127.0.0.1", 8080, "");
+	if (server_config) {
+		std::map<int, std::string>::const_iterator it = server_config->error_pages.find(status_code);
+		if (it != server_config->error_pages.end()) {
+			// Build the full path to the custom error page
+			std::string error_file_path = server_config->root + it->second;
+			
+			// Try to read the custom error page
+			std::string custom_content = readFile(error_file_path);
+			if (!custom_content.empty()) {
+				body = custom_content;
+			}
+		}
+	}
+	
+	// If no custom error page was found or couldn't be read, use default
+	if (body.empty()) {
+		body = "<html><body>";
+		body += "<h1>" + size_t_to_string(status_code) + " " + status_text + "</h1>";
+		body += "</body></html>";
+	}
 	
 	std::string response = "HTTP/1.1 " + size_t_to_string(status_code) + " " + status_text + "\r\n";
 	response += "Content-Type: text/html\r\n";
