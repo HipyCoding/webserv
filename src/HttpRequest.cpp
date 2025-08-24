@@ -25,6 +25,8 @@ bool HttpRequest::parseRequest(const std::string& raw_request) {
     if (!(request_line >> method_str >> _uri >> _version)) {
         return false;
     }
+    if (_uri.length() > 2048) // rfc 7230 recommends 8000, but 2048 is common
+		return false;
     if (method_str == "GET") {
         _method = GET;
     } else if (method_str == "POST") {

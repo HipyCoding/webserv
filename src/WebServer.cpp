@@ -6,7 +6,7 @@
 /*   By: christian <christian@student.42.fr>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/03 07:04:49 by christian         #+#    #+#             */
-/*   Updated: 2025/08/23 16:16:04 by christian        ###   ########.fr       */
+/*   Updated: 2025/08/24 17:24:01 by christian        ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -317,15 +317,17 @@ std::string WebServer::generateResponse(const HttpRequest& request) {
     
     std::cout << "Processing: " << method << " " << uri << std::endl;
     
-    if (request.getMethod() == GET) {
-        return handleGetRequest(request);
-    } else if (request.getMethod() == POST) {
-        return handlePostRequest(request);
-    } else if (request.getMethod() == DELETE) {
-        return handleDeleteRequest(request);
-    } else {
-        return generateErrorResponse(405, "Method Not Allowed");
-    }
+	if (request.getMethod() == GET) {
+		return handleGetRequest(request);
+	} else if (request.getMethod() == POST) {
+		return handlePostRequest(request);
+	} else if (request.getMethod() == DELETE) {
+		return handleDeleteRequest(request);
+	} else if (request.getMethod() == UNKNOWN) {
+		return generateErrorResponse(501, "Not Implemented");
+	} else {
+		return generateErrorResponse(405, "Method Not Allowed");
+	}
 }
 
 size_t WebServer::getContentLength(const std::string& headers) {
@@ -361,18 +363,34 @@ size_t WebServer::getContentLength(const std::string& headers) {
 	return content_length;
 }
 
+std::string WebServer::getStatusMessage(int code) {
+    switch (code) {
+        case 200: return "OK";
+        case 201: return "Created";
+        case 301: return "Moved Permanently";
+        case 302: return "Found";
+        case 307: return "Temporary Redirect";
+        case 400: return "Bad Request";
+        case 403: return "Forbidden";
+        case 404: return "Not Found";
+        case 405: return "Method Not Allowed";
+        case 413: return "Payload Too Large";
+        case 414: return "URI Too Long";
+        case 500: return "Internal Server Error";
+        case 501: return "Not Implemented";
+        default: return "Unknown Status";
+    }
+}
+
 std::string WebServer::generateErrorResponse(int status_code, const std::string& status_text) {
 	std::string body;
-	
-	// Try to get custom error page from config
+	(void) status_text;
+	// try to get custom error page from config
 	const ServerConfig* server_config = _config->findServerConfig("127.0.0.1", 8080, "");
 	if (server_config) {
 		std::map<int, std::string>::const_iterator it = server_config->error_pages.find(status_code);
 		if (it != server_config->error_pages.end()) {
-			// Build the full path to the custom error page
 			std::string error_file_path = server_config->root + it->second;
-			
-			// Try to read the custom error page
 			std::string custom_content = readFile(error_file_path);
 			if (!custom_content.empty()) {
 				body = custom_content;
@@ -380,14 +398,14 @@ std::string WebServer::generateErrorResponse(int status_code, const std::string&
 		}
 	}
 	
-	// If no custom error page was found or couldn't be read, use default
+	// if no page, use default
 	if (body.empty()) {
 		body = "<html><body>";
-		body += "<h1>" + size_t_to_string(status_code) + " " + status_text + "</h1>";
+		body += "<h1>" + size_t_to_string(status_code) + " " + getStatusMessage(status_code) + "</h1>";
 		body += "</body></html>";
 	}
 	
-	std::string response = "HTTP/1.1 " + size_t_to_string(status_code) + " " + status_text + "\r\n";
+	std::string response = "HTTP/1.1 " + size_t_to_string(status_code) + " " + getStatusMessage(status_code) + "\r\n";
 	response += "Content-Type: text/html\r\n";
 	response += "Content-Length: " + size_t_to_string(body.length()) + "\r\n";
 	response += "Connection: close\r\n";

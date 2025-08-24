@@ -64,8 +64,15 @@ void Config::parseSimpleDirective(const std::string& line, ServerConfig& server)
 	} else if (key == "index") {
 		server.index = value;
 		log_debug("parsed index: " + value);
-	} else
+	} else if (key == "client_max_body_size") {  // add this
+		server.client_max_body_size = atoi(value.c_str());
+		log_debug("parsed client_max_body_size: " + value);
+	} else if (key == "error_page") {  // add this
+		parseErrorPage(line, server.error_pages);
+		log_debug("parsed error_page");
+	} else {
 		log_debug("unknown dir: " + key);
+	}
 }
 
 bool Config::parseLocationBlock(std::ifstream& file, ServerConfig& server, 
