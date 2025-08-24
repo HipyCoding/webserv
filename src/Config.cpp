@@ -127,7 +127,7 @@ void Config::parseAllowedMethods(const std::string& line, std::vector<std::strin
 	
 	for (size_t i = 1; i < tokens.size(); ++i) {
 		std::string method = tokens[i];
-		if (method == "GET" || method == "POST" || method == "DELETE" || method == "HEAD")
+		if (method == "GET" || method == "POST" || method == "DELETE")
 			methods.push_back(method);
 	}
 	
