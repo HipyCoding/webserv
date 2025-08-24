@@ -45,8 +45,8 @@ private:
 
 	// cgi environment and execution
 	void initializeInterpreters();
-	std::vector<std::string> setupEnvironment(const HttpRequest& request,
-											  const std::string& script_path) const;
+	std::vector<std::string> setupEnvironment(const HttpRequest& request, 
+                                                     const std::string& script_path) const;
 	std::string getInterpreter(const std::string& script_path,
 							  const std::map<std::string, std::string>& interpreters) const;
 
