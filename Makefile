@@ -1,12 +1,13 @@
 NAME = webserv
 CXX = c++
-CXXFLAGS = -Wall -Wextra -Werror -std=c++98 -g3 -DLOG_LEVEL=0
+CXXFLAGS = -Wall -Wextra -Werror -std=c++98 -g3 -DLOG_LEVEL=1
 SRCDIR = src
 INCDIR = include
 OBJDIR = obj
 
-SOURCES = main.cpp WebServer.cpp HttpRequest.cpp\
-	 Config.cpp ConfigUtils.cpp utils.cpp Cgi.cpp
+SOURCES = main.cpp WebServer.cpp HttpRequest.cpp \
+	Config.cpp ConfigUtils.cpp utils.cpp Cgi.cpp \
+	WebServUtils.cpp WebservRequests.cpp CgiUtils.cpp
 OBJECTS = $(SOURCES:%.cpp=$(OBJDIR)/%.o)
 SRCFILES = $(addprefix $(SRCDIR)/, $(SOURCES))
 

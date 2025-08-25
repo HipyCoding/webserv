@@ -1,25 +1,8 @@
 
-working																				author
+working																					author
 
-ana		added POST/DELETE support and file operations, server implements file
-		uploads, form processing, file deletation and request routing based on
-		URI patterns.
+martin		somehow cgi execution runs completely fine on mac os, like we build it		martin
+chris		but doesnt work on the new linux machines. i dont know why. try to find
+ana			out and fix i guess. maybe evaluate on mac os machines
 
-ana		added proper GET/HEAD request handling, added 404/403 error responses,
-		static file serving from www/ directory
-
-ana		currently trying to fix generateResponse to map the request URI to a file 
-		path using the server's root and index from config.
-
-ana		server now waits for the complete request body. i fixed the function		ana
-		handleClientData, now it waits for complete Content-Length and wont
-		process until body is complete. It also handles Content-Length: 0
-		correctly.
-
-chris	server looks for "\r\n\r\n" or "\n\n" and then just handles the buffer 		chris
-			immidiately, instead of waiting for Content-Length amount of bytes
-			within the body. we should wait for the complete request body, so 
-			we can handle file uploads and CGI later. nginx seems to respond
-			immediately too, but it reads request bodies, when actually needed.
-
-chris	more functional config parsing, i think i focus on this for now		 		chris
+martin		split webserver.cpp inshallah and do other stuff like small bugfixes 		martin
