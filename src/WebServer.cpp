@@ -225,74 +225,82 @@ void WebServer::handleClientWrite(int client_fd, int poll_index) {
 }
 
 void WebServer::handleClientData(int client_fd, int poll_index) {
-	LOG_DEBUG("Reading data from client " + size_t_to_string(client_fd));
-	char buffer[8192];
-	ssize_t bytes_read = recv(client_fd, buffer, sizeof(buffer) - 1, MSG_DONTWAIT);
-	LOG_DEBUG("recv() returned " + size_t_to_string(bytes_read) + " bytes");
+    LOG_DEBUG("Reading data from client " + size_t_to_string(client_fd));
+    char buffer[8192];
+    ssize_t bytes_read = recv(client_fd, buffer, sizeof(buffer) - 1, MSG_DONTWAIT);
+    LOG_DEBUG("recv() returned " + size_t_to_string(bytes_read) + " bytes");
 
-	if (bytes_read <= 0) {
-		if (bytes_read == 0)
-			log_info("Client " + size_t_to_string(client_fd) + " disconnected");
-		else
-			log_error("recv() failed for client " + size_t_to_string(client_fd));
-		cleanupClient(client_fd, poll_index);
-		return;
-	}
-	
-	buffer[bytes_read] = '\0';
-	_client_buffers[client_fd] += buffer;
-	LOG_DEBUG("Buffer for client " + size_t_to_string(client_fd) + " now has " + size_t_to_string(_client_buffers[client_fd].length()) + " bytes");
+    if (bytes_read <= 0) {
+        if (bytes_read == 0)
+            log_info("Client " + size_t_to_string(client_fd) + " disconnected");
+        else
+            log_error("recv() failed for client " + size_t_to_string(client_fd));
+        cleanupClient(client_fd, poll_index);
+        return;
+    }
+    
+    buffer[bytes_read] = '\0';
+    _client_buffers[client_fd] += buffer;
+    LOG_DEBUG("Buffer for client " + size_t_to_string(client_fd) + " now has " + size_t_to_string(_client_buffers[client_fd].length()) + " bytes");
+    std::string& client_buffer = _client_buffers[client_fd];
+    HttpRequest request;
+    if (!request.parseRequest(client_buffer)) {
+        LOG_DEBUG("Request parsing failed, waiting for more data from client " + size_t_to_string(client_fd));
+        return;
+    }
+    if (request.isChunked()) {
+        if (request.needsMoreChunks()) {
+            LOG_DEBUG("Chunked request needs more data from client " + size_t_to_string(client_fd));
+            return;
+        }
+    } else {
+        size_t header_end_pos = client_buffer.find("\r\n\r\n");
+        if (header_end_pos == std::string::npos) {
+            header_end_pos = client_buffer.find("\n\n");
+            if (header_end_pos != std::string::npos)
+                header_end_pos += 2;
+        } else {
+            header_end_pos += 4;
+        }
+        if (header_end_pos == std::string::npos) {
+            LOG_DEBUG("Headers not complete yet, waiting for more data from client " + size_t_to_string(client_fd));
+            return;
+        }
+        std::string headers = client_buffer.substr(0, header_end_pos);
+        size_t content_length = getContentLength(headers);
+        size_t expected_total_size = header_end_pos + content_length;
+        size_t current_size = client_buffer.length();
+        if (current_size < expected_total_size) {
+            LOG_DEBUG("Waiting for " + size_t_to_string(expected_total_size - current_size) + " more bytes from client " + size_t_to_string(client_fd));
+            return;
+        }
+        if (current_size > expected_total_size) {
+            client_buffer = client_buffer.substr(0, expected_total_size);
+            if (!request.parseRequest(client_buffer)) {
+                log_error("HTTP request parse error after trimming for client " + size_t_to_string(client_fd));
+                std::string error_response = generateErrorResponse(400, "Bad Request");
+                queueResponse(client_fd, error_response);
+                _client_buffers.erase(client_fd);
+                return;
+            }
+        }
+    }
 
-	std::string& client_buffer = _client_buffers[client_fd];
-	size_t header_end_pos = client_buffer.find("\r\n\r\n");
-	if (header_end_pos == std::string::npos) {
-		header_end_pos = client_buffer.find("\n\n");
-		if (header_end_pos != std::string::npos)
-			header_end_pos += 2;
-	} else {
-		header_end_pos += 4;
-	}
-
-	if (header_end_pos == std::string::npos) {
-		LOG_DEBUG("Headers not complete yet, waiting for more data from client " + size_t_to_string(client_fd));
-		return;
-	}
-
-	LOG_DEBUG("Headers complete, checking for request body...");
-	std::string headers = client_buffer.substr(0, header_end_pos);
-	size_t content_length = getContentLength(headers);
-	LOG_DEBUG("Content-Length: " + size_t_to_string(content_length));
-
-	size_t expected_total_size = header_end_pos + content_length;
-	size_t current_size = client_buffer.length();
-	LOG_DEBUG("Expected total size: " + size_t_to_string(expected_total_size) + ", current size: " + size_t_to_string(current_size));
-
-	if (current_size >= expected_total_size) {
-		LOG_DEBUG("Complete HTTP request received from client " + size_t_to_string(client_fd));
-		
-		if (current_size > expected_total_size) {
-			client_buffer = client_buffer.substr(0, expected_total_size);
-			LOG_DEBUG("Trimmed buffer to exact request size");
-		}
-
-		HttpRequest request;
-		if (request.parseRequest(client_buffer)) {
-			LOG_DEBUG("Request parsed successfully");
-			std::string response = generateResponse(request);
-			LOG_DEBUG("Generated response for client " + size_t_to_string(client_fd));
-			
-			queueResponse(client_fd, response);
-			
-		} else {
-			log_error("HTTP request parse error for client " + size_t_to_string(client_fd));
-			std::string error_response = generateErrorResponse(400, "Bad Request");
-			queueResponse(client_fd, error_response);
-		}
-		
-		_client_buffers.erase(client_fd);  // clears read buffer after processing
-	} else {
-		LOG_DEBUG("Waiting for " + size_t_to_string(expected_total_size - current_size) + " more bytes from client " + size_t_to_string(client_fd));
-	}
+    LOG_DEBUG("Complete HTTP request received from client " + size_t_to_string(client_fd));
+    const ServerConfig* server_config = _config->findServerConfig("127.0.0.1", 8080, "");
+    if (server_config && request.getBody().length() > server_config->client_max_body_size) {
+        std::string error_response = generateErrorResponse(413, "Request Entity Too Large");
+        queueResponse(client_fd, error_response);
+        _client_buffers.erase(client_fd);
+        return;
+    }
+    
+    LOG_DEBUG("Request parsed successfully");
+    std::string response = generateResponse(request);
+    LOG_DEBUG("Generated response for client " + size_t_to_string(client_fd));
+    
+    queueResponse(client_fd, response);
+    _client_buffers.erase(client_fd);
 }
 
 void WebServer::cleanupClient(int client_fd, int poll_index) {

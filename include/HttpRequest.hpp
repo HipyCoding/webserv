@@ -20,12 +20,19 @@ private:
     std::map<std::string, std::string> _headers;
     std::string _body;
     bool _is_complete;
+    bool _is_chunked;
+    size_t _bytes_remaining;
+    std::string _chunk_buffer;
 
 public:
     HttpRequest();
     ~HttpRequest();
     
     bool parseRequest(const std::string& raw_request);
+
+    bool isChunked() const {return _is_chunked; }
+    bool needsMoreChunks() const;
+    bool processChunk(const std::string& chunk_data);
     
     // Getters
     HttpMethod getMethod() const { return _method; }

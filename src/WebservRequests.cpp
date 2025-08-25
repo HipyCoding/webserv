@@ -234,14 +234,15 @@ std::string WebServer::handleFileUpload(const HttpRequest& request) {
     std::string body = request.getBody();
     std::string upload_dir = "./www/uploads";
     
-	mkdir(upload_dir.c_str(), 0755);
+    // Create upload directory if it doesn't exist
+    mkdir(upload_dir.c_str(), 0755);
 
     std::ostringstream filename;
     filename << "upload_" << time(NULL) << ".txt";
     
     std::string file_path = upload_dir + "/" + filename.str();
     
-    std::ofstream outfile(file_path.c_str());
+    std::ofstream outfile(file_path.c_str(), std::ios::binary);
     if (!outfile.is_open()) {
         return generateErrorResponse(500, "Internal Server Error");
     }
@@ -249,18 +250,24 @@ std::string WebServer::handleFileUpload(const HttpRequest& request) {
     outfile << body;
     outfile.close();
 
-	std::ostringstream html_content;
-	html_content << "<html><body><h1>File uploaded sucessfully<h1>";
-	html_content << "<p> Saved as: " << filename.str() << "</p></body></html>";
+    std::ostringstream html_content;
+    html_content << "<html><body><h1>File uploaded successfully</h1>";
+    html_content << "<p>Saved as: " << filename.str() << "</p>";
+    html_content << "<p>Size: " << body.length() << " bytes</p>";
+    if (request.isChunked()) {
+        html_content << "<p>Transfer: Chunked encoding</p>";
+    }
+    html_content << "</body></html>";
     
     std::ostringstream response;
     response << "HTTP/1.1 201 Created\r\n";
     response << "Content-Type: text/html\r\n";
-	response << "Content-Lenght: " << html_content.str().length() << "\r\n";
+    response << "Content-Length: " << html_content.str().length() << "\r\n";
     response << "Location: /uploads/" << filename.str() << "\r\n";
     response << "Connection: close\r\n";
     response << "Server: Webserv/1.0\r\n";
-	response << html_content.str();
+    response << "\r\n";
+    response << html_content.str();
 
     return response.str();
 }
