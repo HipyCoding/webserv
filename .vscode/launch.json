@@ -2,7 +2,33 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Debug (config)",
+            "name": "Debug webserv (default config)",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/webserv",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "miDebuggerPath": "/usr/bin/gdb",
+            "preLaunchTask": "Build webserv debug",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Set Disassembly Flavor to Intel",
+                    "text": "-gdb-set disassembly-flavor intel",
+                    "ignoreFailures": true
+                }
+            ]
+        },
+        {
+            "name": "Debug webserv (custom config)",
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/webserv",
@@ -11,8 +37,28 @@
             "cwd": "${workspaceFolder}",
             "environment": [],
             "externalConsole": false,
-            "MIMode": "lldb",
-            "preLaunchTask": "Build webserv",
+            "MIMode": "gdb",
+            "miDebuggerPath": "/usr/bin/gdb",
+            "preLaunchTask": "Build webserv debug"
+        },
+        {
+            "name": "Debug CGI Issue",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/webserv",
+            "args": [],
+            "stopAtEntry": true,
+            "cwd": "${workspaceFolder}",
+            "environment": [
+                {
+                    "name": "LOG_LEVEL",
+                    "value": "0"
+                }
+            ],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "miDebuggerPath": "/usr/bin/gdb",
+            //"preLaunchTask": "Build webserv debug",
             "setupCommands": [
                 {
                     "description": "Enable pretty-printing for gdb",
@@ -22,25 +68,89 @@
             ]
         },
         {
-            "name": "Debug webserv (terminal)",
+            "name": "Debug with Valgrind",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/webserv",
-            "args": [],
+            "program": "/usr/bin/valgrind",
+            "args": [
+                "--tool=memcheck",
+                "--leak-check=full",
+                "--show-leak-kinds=all",
+                "--track-origins=yes",
+                "--verbose",
+                "--log-file=valgrind-out.txt",
+                "${workspaceFolder}/webserv"
+            ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
             "environment": [],
-            "externalConsole": true,
-            "MIMode": "lldb",
-            "preLaunchTask": "Build webserv"
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "miDebuggerPath": "/usr/bin/gdb",
+            "preLaunchTask": "Build webserv debug"
         },
         {
-            "name": "Attach to webserv",
+            "name": "Attach to running webserv",
             "type": "cppdbg",
             "request": "attach",
             "program": "${workspaceFolder}/webserv",
             "processId": "${command:pickProcess}",
-            "MIMode": "lldb"
+            "MIMode": "gdb",
+            "miDebuggerPath": "/usr/bin/gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
         }
     ]
 }
+
+// {
+//     "version": "0.2.0",
+//     "configurations": [
+//         {
+//             "name": "Debug (config)",
+//             "type": "cppdbg",
+//             "request": "launch",
+//             "program": "${workspaceFolder}/webserv",
+//             "args": ["config/test.conf"],
+//             "stopAtEntry": false,
+//             "cwd": "${workspaceFolder}",
+//             "environment": [],
+//             "externalConsole": false,
+//             "MIMode": "lldb",
+//             "preLaunchTask": "Build webserv",
+//             "setupCommands": [
+//                 {
+//                     "description": "Enable pretty-printing for gdb",
+//                     "text": "-enable-pretty-printing",
+//                     "ignoreFailures": true
+//                 }
+//             ]
+//         },
+//         {
+//             "name": "Debug webserv (terminal)",
+//             "type": "cppdbg",
+//             "request": "launch",
+//             "program": "${workspaceFolder}/webserv",
+//             "args": [],
+//             "stopAtEntry": false,
+//             "cwd": "${workspaceFolder}",
+//             "environment": [],
+//             "externalConsole": true,
+//             "MIMode": "lldb",
+//             "preLaunchTask": "Build webserv"
+//         },
+//         {
+//             "name": "Attach to webserv",
+//             "type": "cppdbg",
+//             "request": "attach",
+//             "program": "${workspaceFolder}/webserv",
+//             "processId": "${command:pickProcess}",
+//             "MIMode": "lldb"
+//         }
+//     ]
+// }

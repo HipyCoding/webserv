@@ -2,28 +2,13 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "label": "Build webserv",
+            "label": "Build webserv debug",
             "type": "shell",
             "command": "make",
-            "args": ["all"],
+            "args": ["re", "DEBUG=1"],
             "group": {
                 "kind": "build",
                 "isDefault": true
-            },
-            "options": {
-                "cwd": "${workspaceFolder}"
-            },
-            "problemMatcher": {
-                "owner": "cpp",
-                "fileLocation": ["relative", "${workspaceFolder}"],
-                "pattern": {
-                    "regexp": "^(.*):(\\d+):(\\d+):\\s+(warning|error):\\s+(.*)$",
-                    "file": 1,
-                    "line": 2,
-                    "column": 3,
-                    "severity": 4,
-                    "message": 5
-                }
             },
             "presentation": {
                 "echo": true,
@@ -32,39 +17,114 @@
                 "panel": "shared",
                 "showReuseMessage": true,
                 "clear": false
-            }
+            },
+            "problemMatcher": "$gcc"
         },
         {
-            "label": "Clean webserv",
-            "type": "shell",
-            "command": "make",
-            "args": ["clean"],
-            "group": "build",
-            "options": {
-                "cwd": "${workspaceFolder}"
-            }
-        },
-        {
-            "label": "Rebuild webserv",
+            "label": "Build webserv release",
             "type": "shell",
             "command": "make",
             "args": ["re"],
             "group": "build",
-            "options": {
-                "cwd": "${workspaceFolder}"
-            },
-            "problemMatcher": {
-                "owner": "cpp",
-                "fileLocation": ["relative", "${workspaceFolder}"],
-                "pattern": {
-                    "regexp": "^(.*):(\\d+):(\\d+):\\s+(warning|error):\\s+(.*)$",
-                    "file": 1,
-                    "line": 2,
-                    "column": 3,
-                    "severity": 4,
-                    "message": 5
-                }
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
             }
+        },
+        {
+            "label": "Clean build",
+            "type": "shell",
+            "command": "make",
+            "args": ["fclean"],
+            "group": "build"
+        },
+        {
+            "label": "Run with Valgrind",
+            "type": "shell",
+            "command": "valgrind",
+            "args": [
+                "--leak-check=full",
+                "--show-leak-kinds=all",
+                "--track-origins=yes",
+                "--verbose",
+                "./webserv"
+            ],
+            "group": "test",
+            "dependsOn": "Build webserv debug"
         }
     ]
 }
+
+
+// {
+//     "version": "2.0.0",
+//     "tasks": [
+//         {
+//             "label": "Build webserv",
+//             "type": "shell",
+//             "command": "make",
+//             "args": ["all"],
+//             "group": {
+//                 "kind": "build",
+//                 "isDefault": true
+//             },
+//             "options": {
+//                 "cwd": "${workspaceFolder}"
+//             },
+//             "problemMatcher": {
+//                 "owner": "cpp",
+//                 "fileLocation": ["relative", "${workspaceFolder}"],
+//                 "pattern": {
+//                     "regexp": "^(.*):(\\d+):(\\d+):\\s+(warning|error):\\s+(.*)$",
+//                     "file": 1,
+//                     "line": 2,
+//                     "column": 3,
+//                     "severity": 4,
+//                     "message": 5
+//                 }
+//             },
+//             "presentation": {
+//                 "echo": true,
+//                 "reveal": "always",
+//                 "focus": false,
+//                 "panel": "shared",
+//                 "showReuseMessage": true,
+//                 "clear": false
+//             }
+//         },
+//         {
+//             "label": "Clean webserv",
+//             "type": "shell",
+//             "command": "make",
+//             "args": ["clean"],
+//             "group": "build",
+//             "options": {
+//                 "cwd": "${workspaceFolder}"
+//             }
+//         },
+//         {
+//             "label": "Rebuild webserv",
+//             "type": "shell",
+//             "command": "make",
+//             "args": ["re"],
+//             "group": "build",
+//             "options": {
+//                 "cwd": "${workspaceFolder}"
+//             },
+//             "problemMatcher": {
+//                 "owner": "cpp",
+//                 "fileLocation": ["relative", "${workspaceFolder}"],
+//                 "pattern": {
+//                     "regexp": "^(.*):(\\d+):(\\d+):\\s+(warning|error):\\s+(.*)$",
+//                     "file": 1,
+//                     "line": 2,
+//                     "column": 3,
+//                     "severity": 4,
+//                     "message": 5
+//                 }
+//             }
+//         }
+//     ]
+// }
