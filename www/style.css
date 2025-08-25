@@ -1,8 +1,21 @@
 body {
     font-family: Arial, sans-serif;
-    margin: 40px;
+    margin: 0 auto;
+    padding: 40px;
+    max-width: 1200px;
     color: #333;
     background-color: #f0f0f0;
+}
+
+.main-wrapper {
+    width: 100%;
+    max-width: 1200px;
+    padding: 40px;
+    box-sizing: border-box;
+}
+
+h1 {
+    text-align: center;
 }
 
 nav {
