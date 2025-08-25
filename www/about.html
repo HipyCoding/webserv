@@ -1,1 +1,59 @@
-<html><body><h1>About Page</h1><p>This is the about page.</p></body></html>
+<!DOCTYPE html>
+<html>
+<head>
+    <title>About - Webserv</title>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <h1>About Webserv</h1>
+    
+    <div class="config-test">
+        <h2>Project Overview</h2>
+        <p>Webserv is a custom HTTP/1.1 web server built from scratch in C++. This project demonstrates low-level network programming and HTTP protocol implementation.</p>
+        
+        <h3>Key Features:</h3>
+        <ul style="text-align: left; max-width: 600px; margin: 0 auto;">
+            <li>HTTP/1.1 compliant server</li>
+            <li>Multiple server support on different ports</li>
+            <li>Non-blocking I/O with poll()/epoll()</li>
+            <li>Configuration file parsing</li>
+            <li>Static file serving</li>
+            <li>CGI script execution support</li>
+            <li>Custom error pages</li>
+            <li>File upload capabilities</li>
+            <li>Method restrictions (GET, POST, DELETE)</li>
+        </ul>
+    </div>
+    
+    <div class="config-test">
+        <h2>Technical Implementation</h2>
+        <p>Built using modern C++ with focus on:</p>
+        <div class="warning">
+            <strong>• Socket Programming:</strong> TCP/IP socket creation and management<br>
+            <strong>• Event-Driven Architecture:</strong> Efficient handling of multiple connections<br>
+            <strong>• HTTP Parsing:</strong> Complete request/response cycle implementation<br>
+            <strong>• Resource Management:</strong> Proper memory and file descriptor handling
+        </div>
+    </div>
+    
+    <div class="config-test">
+        <h2>Configuration</h2>
+        <p>The server is highly configurable through a custom configuration file that supports:</p>
+        <ul style="text-align: left; max-width: 600px; margin: 0 auto;">
+            <li>Server blocks with different ports and hostnames</li>
+            <li>Location-based routing rules</li>
+            <li>Client body size limits</li>
+            <li>Timeout settings</li>
+            <li>Index file specifications</li>
+            <li>Autoindex directory listing</li>
+        </ul>
+    </div>
+    
+    <div class="test-links">
+        <a href="/">Back to Home</a>
+    </div>
+    
+    <script src="script.js"></script>
+</body>
+</html>

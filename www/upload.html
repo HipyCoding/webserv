@@ -1,34 +1,54 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>File Upload Test</title>
+    <title>File Upload Test - Webserv</title>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <h1>File Upload Test</h1>
     
-    <form action="/upload" method="post" enctype="multipart/form-data">
-        <p>
-            <label>Name: <input type="text" name="username" value="test_user"></label>
-        </p>
-        <p>
-            <label>Description: <input type="text" name="description" value="test upload"></label>
-        </p>
-        <p>
-            <label>Choose file: <input type="file" name="uploaded_file"></label>
-        </p>
-        <p>
-            <input type="submit" value="Upload">
-        </p>
-    </form>
+    <div class="config-test">
+        <h2>File Upload with Metadata</h2>
+        <form action="/upload" method="post" enctype="multipart/form-data">
+            <p>
+                <label>Name: <input type="text" name="username" value="test_user" class="form-input"></label>
+            </p>
+            <p>
+                <label>Description: <input type="text" name="description" value="test upload" class="form-input"></label>
+            </p>
+            <p>
+                <label>Choose file: <input type="file" name="uploaded_file" class="form-input"></label>
+            </p>
+            <div class="test-links">
+                <input type="submit" value="Upload" class="submit-button">
+            </div>
+        </form>
+    </div>
     
-    <h2>Simple Upload (no form)</h2>
-    <form action="/upload" method="post">
-        <p>
-            <label>Text data: <textarea name="content" rows="4" cols="50">Simple text upload</textarea></label>
-        </p>
-        <p>
-            <input type="submit" value="Upload Text">
-        </p>
-    </form>
+    <div class="config-test">
+        <h2>Simple Text Upload</h2>
+        <form action="/upload" method="post">
+            <p>
+                <label>Text data:</label><br>
+                <textarea name="content" rows="4" cols="50" class="form-input">Simple text upload</textarea>
+            </p>
+            <div class="test-links">
+                <input type="submit" value="Upload Text" class="submit-button">
+            </div>
+        </form>
+    </div>
+    
+    <div class="warning">
+        <strong>Note:</strong> File uploads are limited to the configured max body size. 
+        The server will store uploaded files in the /uploads directory.
+    </div>
+    
+    <div class="test-links">
+        <a href="/">Back to Home</a>
+        <a href="/about.html">About</a>
+    </div>
+    
+    <script src="script.js"></script>
 </body>
 </html>
