@@ -1,24 +1,34 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Upload Test</title>
+    <title>File Upload Test</title>
 </head>
 <body>
-    <h1>Test Upload</h1>
+    <h1>File Upload Test</h1>
     
-    <h2>File Upload</h2>
-    <form action="/upload" method="POST">
-        <textarea name="content" rows="5" cols="50">Type your content here...</textarea><br>
-        <input type="submit" value="Upload">
+    <form action="/upload" method="post" enctype="multipart/form-data">
+        <p>
+            <label>Name: <input type="text" name="username" value="test_user"></label>
+        </p>
+        <p>
+            <label>Description: <input type="text" name="description" value="test upload"></label>
+        </p>
+        <p>
+            <label>Choose file: <input type="file" name="uploaded_file"></label>
+        </p>
+        <p>
+            <input type="submit" value="Upload">
+        </p>
     </form>
     
-    <h2>Form Submission</h2>
-    <form action="/form" method="POST">
-        <input type="text" name="name" placeholder="Your name"><br>
-        <input type="email" name="email" placeholder="Your email"><br>
-        <input type="submit" value="Submit">
+    <h2>Simple Upload (no form)</h2>
+    <form action="/upload" method="post">
+        <p>
+            <label>Text data: <textarea name="content" rows="4" cols="50">Simple text upload</textarea></label>
+        </p>
+        <p>
+            <input type="submit" value="Upload Text">
+        </p>
     </form>
-    
-    <p><a href="/">Back to home</a></p>
 </body>
 </html>
