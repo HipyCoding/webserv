@@ -12,6 +12,13 @@ enum HttpMethod {
     UNKNOWN
 };
 
+struct FormFile {
+    std::string name;
+    std::string filename;
+    std::string content_type;
+    std::string content;
+};
+
 class HttpRequest {
 private:
     HttpMethod _method;
@@ -24,16 +31,27 @@ private:
     size_t _bytes_remaining;
     std::string _chunk_buffer;
 
+    std::map<std::string, std::string> _form_data;
+    std::vector<FormFile> _uploaded_files;
+    bool _is_multipart;
+
 public:
     HttpRequest();
     ~HttpRequest();
     
     bool parseRequest(const std::string& raw_request);
 
+    // Chunks (xd minecraft chunks)
     bool isChunked() const {return _is_chunked; }
     bool needsMoreChunks() const;
     bool processChunk(const std::string& chunk_data);
     
+    //uploads
+    bool isMultipart() const { return _is_multipart; }
+    bool parseMultipartData();
+    const std::map<std::string, std::string>& getFormData() const { return _form_data; }
+    const std::vector<FormFile>& getUploadedFiles() const { return _uploaded_files; }
+
     // Getters
     HttpMethod getMethod() const { return _method; }
     const std::string& getUri() const { return _uri; }

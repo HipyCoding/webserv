@@ -62,10 +62,12 @@ class WebServer {
 
     // special requests
     std::string handleFileUpload(const HttpRequest& request);
+	std::string handleMultipartUpload(const HttpRequest& request);
+	std::string handleSimpleUpload(const HttpRequest& request);
 	std::string handleFileUploadToLocation(const HttpRequest& request, const LocationConfig* location_config);
 	std::string handleFormSubmission(const HttpRequest& request);
 	std::string handlePostEcho(const HttpRequest& request);
-	std::string handleDirectoryRequest(const std::string& dir_path, const std::string& uri);
+	// std::string handleDirectoryRequest(const std::string& dir_path, const std::string& uri);
 	std::string handleDirectoryRequest(const std::string& dir_path, const std::string& uri, const LocationConfig* location_config);
 	std::string generateDirectoryListing(const std::string& dir_path, const std::string& uri);
 
@@ -74,8 +76,10 @@ class WebServer {
 	std::string generateErrorResponse(int status_code, const std::string& status_text);
 	std::string getStatusMessage(int code);
 	std::string getContentType(const std::string& file_path);
-	std::string getFilePath(const std::string& uri);
+	// std::string getFilePath(const std::string& uri);
 	std::string getFilePathWithRoot(const std::string& uri, const std::string& root);
+	std::string getFileExtension(const std::string& filename);
+	std::string getExtensionFromContentType(const std::string& content_type);
 	size_t getContentLength(const std::string& headers);
 	bool isDirectory(const std::string& path);
 	std::string readFile(const std::string& file_path);

@@ -28,6 +28,30 @@ std::string WebServer::handleGetRequest(const HttpRequest& request) {
 	std::string uri = request.getUri();
 	std::string host = request.getHeader("Host");
 
+    if (uri.find("/uploads/") == 0) {
+        std::string filename = uri.substr(9);
+        std::string file_path = "./www/uploads/" + filename;
+        
+        if (filename.find("..") != std::string::npos) {
+            return generateErrorResponse(403, "Forbidden");
+        }
+        
+        if (!fileExists(file_path)) {
+            return generateErrorResponse(404, "Not Found");
+        }
+        
+        if (access(file_path.c_str(), R_OK) != 0) {
+            return generateErrorResponse(403, "Forbidden");
+        }
+        
+        std::string content = readFile(file_path);
+        if (content.empty() && fileExists(file_path)) {
+            return generateErrorResponse(500, "Internal Server Error");
+        }
+        
+        return generateSuccessResponse(content, getContentType(file_path));
+    }
+
 	const ServerConfig* server_config = _config->findServerConfig("127.0.0.1", 8080, "");
 	if (!server_config) {
 		log_error("no server config found");
@@ -64,64 +88,61 @@ std::string WebServer::handleGetRequest(const HttpRequest& request) {
 	
 	std::string file_path = getFilePathWithRoot(uri, root);
     
-    if (!fileExists(file_path)) {
+    if (!fileExists(file_path))
         return generateErrorResponse(404, "Not Found");
-    }
-    
-    if (isDirectory(file_path)) {
+
+    if (isDirectory(file_path))
         return handleDirectoryRequest(file_path, uri, location_config);
-    }
     
-    if (access(file_path.c_str(), R_OK) != 0) {
+    if (access(file_path.c_str(), R_OK) != 0)
         return generateErrorResponse(403, "Forbidden");
-    }
     
     std::string content = readFile(file_path);
-    if (content.empty() && fileExists(file_path)) {
+    if (content.empty() && fileExists(file_path))
         return generateErrorResponse(500, "Internal Server Error");
-    }
     
     return generateSuccessResponse(content, getContentType(file_path));
 }
 
 std::string WebServer::handlePostRequest(const HttpRequest& request) {
-	std::string uri = request.getUri();
+    std::string uri = request.getUri();
 
-	const ServerConfig* server_config = _config->findServerConfig("127.0.0.1", 8080, "");
-	if (!server_config)
-		return generateErrorResponse(500, "Internal Server Error");
+    const ServerConfig* server_config = _config->findServerConfig("127.0.0.1", 8080, "");
+    if (!server_config)
+        return generateErrorResponse(500, "Internal Server Error");
 
-	const LocationConfig* location_config = _config->findLocationConfig(*server_config, uri);
+    const LocationConfig* location_config = _config->findLocationConfig(*server_config, uri);
 
-	if (location_config) {
-		std::string redirect_response = handleRedirect(location_config);
-		if (!redirect_response.empty())
-			return redirect_response;
-	}
-	if (location_config) {
-		bool method_allowed = false;
-		for (size_t i = 0; i < location_config->allowed_methods.size(); ++i) {
-			if (location_config->allowed_methods[i] == "POST") {
-				method_allowed = true;
-				break;
-			}
-		}
-		if (!method_allowed)
-			return generateErrorResponse(405, "Method Not Allowed");
-	}
+    if (location_config) {
+        std::string redirect_response = handleRedirect(location_config);
+        if (!redirect_response.empty())
+            return redirect_response;
+    }
+    
+    if (location_config) {
+        bool method_allowed = false;
+        for (size_t i = 0; i < location_config->allowed_methods.size(); ++i) {
+            if (location_config->allowed_methods[i] == "POST") {
+                method_allowed = true;
+                break;
+            }
+        }
+        if (!method_allowed)
+            return generateErrorResponse(405, "Method Not Allowed");
+    }
 
-	size_t max_body_size = server_config->client_max_body_size;
-	if (request.getBody().length() > max_body_size)
-		return generateErrorResponse(413, "Request Entity Too Large");
+    size_t max_body_size = server_config->client_max_body_size;
+    if (request.getBody().length() > max_body_size)
+        return generateErrorResponse(413, "Request Entity Too Large");
 
-	if (_cgi_handler && _cgi_handler->isCgiRequest(uri))
-		return _cgi_handler->handleCgiRequest(request);
+    if (_cgi_handler && _cgi_handler->isCgiRequest(uri))
+        return _cgi_handler->handleCgiRequest(request);
 
-	if (location_config && !location_config->upload_path.empty())
-		return handleFileUploadToLocation(request, location_config);
-	
-	std::string body = request.getBody();
-	log_info("POST request for: " + uri + " (body: " + size_t_to_string(body.length()) + " bytes)");
+    if (location_config && !location_config->upload_path.empty())
+        return handleFileUploadToLocation(request, location_config);
+    
+    std::string body = request.getBody();
+    log_info("POST request for: " + uri + " (body: " + size_t_to_string(body.length()) + " bytes)");
 
     if (uri.find("/upload") == 0)
         return handleFileUpload(request);
@@ -131,6 +152,7 @@ std::string WebServer::handlePostRequest(const HttpRequest& request) {
     
     return handlePostEcho(request);
 }
+
 
 std::string WebServer::handleDeleteRequest(const HttpRequest& request) {
 	std::string uri = request.getUri();
@@ -187,15 +209,13 @@ std::string WebServer::handleDeleteRequest(const HttpRequest& request) {
 		response << "\r\n";
 		response << "<html><body><h1>File deleted</h1></body></html>";
 		return response.str();
-	} else {
+	} else
 		return generateErrorResponse(500, "Internal Server Error - Delete failed");
-	}
 }
 
 std::string WebServer::handleRedirect(const LocationConfig* location) {
-    if (!location || location->redirect.empty()) {
+    if (!location || location->redirect.empty())
         return "";
-    }
     
     std::string redirect_url = location->redirect;
     
@@ -231,10 +251,83 @@ std::string WebServer::handleRedirect(const LocationConfig* location) {
 }
 
 std::string WebServer::handleFileUpload(const HttpRequest& request) {
+    std::string upload_dir = "./www/uploads";
+    mkdir(upload_dir.c_str(), 0755);
+    if (request.isMultipart() && !request.getUploadedFiles().empty())
+        return handleMultipartUpload(request);
+    else
+        return handleSimpleUpload(request);
+}
+
+std::string WebServer::handleMultipartUpload(const HttpRequest& request) {
+    std::string upload_dir = "./www/uploads";
+    const std::vector<FormFile>& uploaded_files = request.getUploadedFiles();
+    const std::map<std::string, std::string>& form_data = request.getFormData();
+    
+    std::ostringstream html;
+    html << "<!DOCTYPE html><html><head><title>Upload Results</title>";
+    html << "<style>body{font-family:Arial,sans-serif;margin:40px;} ";
+    html << ".file{border:1px solid #ddd;padding:15px;margin:10px 0;} ";
+    html << "img{max-width:300px;max-height:300px;border:1px solid #ccc;}</style>";
+    html << "</head><body><h1>File Upload Results</h1>";
+    
+    if (uploaded_files.empty()) {
+        html << "<p>No files uploaded.</p>";
+    } else {
+        html << "<h2>Uploaded Files:</h2>";
+        
+        for (size_t i = 0; i < uploaded_files.size(); ++i) {
+            const FormFile& file = uploaded_files[i];
+            
+            if (file.filename.empty() || file.content.empty())
+                continue;
+            std::string extension = getFileExtension(file.filename);
+            if (extension.empty())
+                extension = getExtensionFromContentType(file.content_type);
+            std::ostringstream filename;
+            filename << "upload_" << time(NULL) << "_" << i << extension;
+            
+            std::string file_path = upload_dir + "/" + filename.str();
+            
+            std::ofstream outfile(file_path.c_str(), std::ios::binary);
+            if (!outfile.is_open()) {
+                html << "<p>Error: Could not save file " << file.filename << "</p>";
+                continue;
+            }
+            
+            outfile.write(file.content.c_str(), file.content.length());
+            outfile.close();
+            html << "<div class='file'>";
+            html << "<h3>" << file.filename << "</h3>";
+            html << "<p><strong>Size:</strong> " << file.content.length() << " bytes</p>";
+            html << "<p><strong>Type:</strong> " << file.content_type << "</p>";
+            html << "<p><strong>Saved as:</strong> " << filename.str() << "</p>";
+            if (file.content_type.find("image/") == 0) {
+                html << "<p><strong>Preview:</strong></p>";
+                html << "<img src='/uploads/" << filename.str() << "' alt='" << file.filename << "'>";
+            }
+            html << "</div>";
+            
+            log_info("Saved uploaded file: " + file.filename + " as " + filename.str() + 
+                    " (" + size_t_to_string(file.content.length()) + " bytes)");
+        }
+    }
+    if (!form_data.empty()) {
+        html << "<h2>Form Data:</h2>";
+        for (std::map<std::string, std::string>::const_iterator it = form_data.begin(); 
+             it != form_data.end(); ++it) {
+            html << "<p><strong>" << it->first << ":</strong> " << it->second << "</p>";
+        }
+    }
+    html << "<p><a href='/'>Back to home</a></p>";
+    html << "</body></html>";
+    
+    return generateSuccessResponse(html.str(), "text/html");
+}
+
+std::string WebServer::handleSimpleUpload(const HttpRequest& request) {
     std::string body = request.getBody();
     std::string upload_dir = "./www/uploads";
-    
-    // Create upload directory if it doesn't exist
     mkdir(upload_dir.c_str(), 0755);
 
     std::ostringstream filename;
@@ -242,7 +335,7 @@ std::string WebServer::handleFileUpload(const HttpRequest& request) {
     
     std::string file_path = upload_dir + "/" + filename.str();
     
-    std::ofstream outfile(file_path.c_str(), std::ios::binary);
+    std::ofstream outfile(file_path.c_str());
     if (!outfile.is_open()) {
         return generateErrorResponse(500, "Internal Server Error");
     }
@@ -259,17 +352,33 @@ std::string WebServer::handleFileUpload(const HttpRequest& request) {
     }
     html_content << "</body></html>";
     
-    std::ostringstream response;
-    response << "HTTP/1.1 201 Created\r\n";
-    response << "Content-Type: text/html\r\n";
-    response << "Content-Length: " << html_content.str().length() << "\r\n";
-    response << "Location: /uploads/" << filename.str() << "\r\n";
-    response << "Connection: close\r\n";
-    response << "Server: Webserv/1.0\r\n";
-    response << "\r\n";
-    response << html_content.str();
+    return generateSuccessResponse(html_content.str(), "text/html");
+}
 
-    return response.str();
+std::string WebServer::getFileExtension(const std::string& filename) {
+    size_t dot_pos = filename.find_last_of('.');
+    if (dot_pos != std::string::npos && dot_pos < filename.length() - 1) {
+        return filename.substr(dot_pos);
+    }
+    return "";
+}
+
+std::string WebServer::getExtensionFromContentType(const std::string& content_type) {
+    if (content_type == "image/png") return ".png";
+    if (content_type == "image/jpeg") return ".jpg";
+    if (content_type == "image/gif") return ".gif";
+    if (content_type == "image/bmp") return ".bmp";
+    if (content_type == "image/webp") return ".webp";
+    if (content_type == "text/plain") return ".txt";
+    if (content_type == "text/html") return ".html";
+    if (content_type == "text/css") return ".css";
+    if (content_type == "application/javascript") return ".js";
+    if (content_type == "application/json") return ".json";
+    if (content_type == "application/pdf") return ".pdf";
+    if (content_type == "application/zip") return ".zip";
+    if (content_type == "video/mp4") return ".mp4";
+    if (content_type == "audio/mpeg") return ".mp3";
+    return ".bin";
 }
 
 std::string WebServer::handleFileUploadToLocation(const HttpRequest& request, const LocationConfig* location_config) {
