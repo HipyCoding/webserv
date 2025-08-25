@@ -25,68 +25,78 @@ std::string WebServer::generateResponse(const HttpRequest& request) {
 }
 
 std::string WebServer::handleGetRequest(const HttpRequest& request) {
-	std::string uri = request.getUri();
-	std::string host = request.getHeader("Host");
+    std::string uri = request.getUri();
+    std::string host = request.getHeader("Host");
 
+    // Special handling for uploads directory
     if (uri.find("/uploads/") == 0) {
-        std::string filename = uri.substr(9);
+        std::string filename = uri.substr(9); // Remove "/uploads/"
+        
+        if (filename.empty()) {
+            // This is a request for /uploads/ directory listing
+            std::string upload_dir = "./www/uploads";
+            
+            // Check if directory exists
+            if (!fileExists(upload_dir) || !isDirectory(upload_dir)) {
+                return generateErrorResponse(404, "Not Found");
+            }
+            
+            // Generate directory listing for uploads
+            return generateDirectoryListing(upload_dir, uri);
+        }
+        
         std::string file_path = "./www/uploads/" + filename;
         
-        if (filename.find("..") != std::string::npos) {
+        if (filename.find("..") != std::string::npos)
             return generateErrorResponse(403, "Forbidden");
-        }
         
-        if (!fileExists(file_path)) {
+        if (!fileExists(file_path))
             return generateErrorResponse(404, "Not Found");
-        }
         
-        if (access(file_path.c_str(), R_OK) != 0) {
+        if (access(file_path.c_str(), R_OK) != 0)
             return generateErrorResponse(403, "Forbidden");
-        }
         
         std::string content = readFile(file_path);
-        if (content.empty() && fileExists(file_path)) {
+        if (content.empty() && fileExists(file_path))
             return generateErrorResponse(500, "Internal Server Error");
-        }
         
         return generateSuccessResponse(content, getContentType(file_path));
     }
 
-	const ServerConfig* server_config = _config->findServerConfig("127.0.0.1", 8080, "");
-	if (!server_config) {
-		log_error("no server config found");
-		return generateErrorResponse(500, "Internal Server Error");
-	}
+    const ServerConfig* server_config = _config->findServerConfig("127.0.0.1", 8080, "");
+    if (!server_config) {
+        log_error("no server config found");
+        return generateErrorResponse(500, "Internal Server Error");
+    }
 
-	const LocationConfig* location_config = _config->findLocationConfig(*server_config, uri);
-	
-	if (location_config){
-		std::string redirect_response = handleRedirect(location_config);
-		if (!redirect_response.empty())
-			return redirect_response;
-	}
+    const LocationConfig* location_config = _config->findLocationConfig(*server_config, uri);
+    
+    if (location_config){
+        std::string redirect_response = handleRedirect(location_config);
+        if (!redirect_response.empty())
+            return redirect_response;
+    }
 
+    if (location_config) {    // checking method permissions
+        bool method_allowed = false;
+        for (size_t i = 0; i < location_config->allowed_methods.size(); ++i) {
+            if (location_config->allowed_methods[i] == "GET") {
+                method_allowed = true;
+                break;
+            }
+        }
+        if (!method_allowed)
+            return generateErrorResponse(405, "Method Not Allowed");
+    }
 
-	if (location_config) {	// checkin method permissions
-		bool method_allowed = false;
-		for (size_t i = 0; i < location_config->allowed_methods.size(); ++i) {
-			if (location_config->allowed_methods[i] == "GET") {
-				method_allowed = true;
-				break;
-			}
-		}
-		if (!method_allowed)
-			return generateErrorResponse(405, "Method Not Allowed");
-	}
+    if (_cgi_handler && _cgi_handler->isCgiRequest(uri))
+        return _cgi_handler->handleCgiRequest(request);
 
-	if (_cgi_handler && _cgi_handler->isCgiRequest(uri))
-		return _cgi_handler->handleCgiRequest(request);
-
-	std::string root = server_config->root;
-	if (location_config && !location_config->root.empty())
-		root = location_config->root;
-	
-	std::string file_path = getFilePathWithRoot(uri, root);
+    std::string root = server_config->root;
+    if (location_config && !location_config->root.empty())
+        root = location_config->root;
+    
+    std::string file_path = getFilePathWithRoot(uri, root);
     
     if (!fileExists(file_path))
         return generateErrorResponse(404, "Not Found");
@@ -467,31 +477,72 @@ std::string WebServer::handleDirectoryRequest(const std::string& dir_path, const
 
 
 std::string WebServer::generateDirectoryListing(const std::string& dir_path, const std::string& uri) {
-	std::ostringstream html;
-	
-	html << "<html><head><title>Index of " << uri << "</title></head><body>";
-	html << "<h1>Index of " << uri << "</h1><hr>";
-	html << "<pre>";
-	
-	if (uri != "/")	// add parent directory link if not root
-		html << "<a href=\"../\">../</a>\n";
-	
-	DIR* dir = opendir(dir_path.c_str());
-	if (dir != NULL) {
-		struct dirent* entry;
-		while ((entry = readdir(dir)) != NULL) {
-			std::string name = entry->d_name;
-			if (name == "." || (name[0] == '.' && name != "..")) //skipps hidden files and current dir
-				continue;
-				
-			html << "<a href=\"" << name << "\">" << name << "</a>\n";
-		}
-		closedir(dir);
-	} else {
-		html << "<i>Directory listing unavailable</i>\n";
-	}
-	
-	html << "</pre><hr></body></html>";
-	
-	return generateSuccessResponse(html.str(), "text/html");
+    std::ostringstream html;
+
+    html << "<!DOCTYPE html><html><head><title>Index of " << uri << "</title>";
+    html << "<style>body{font-family:Arial,sans-serif;margin:40px;} ";
+    html << "table{border-collapse:collapse;width:100%;} ";
+    html << "th,td{text-align:left;padding:8px;border-bottom:1px solid #ddd;} ";
+    html << "a{text-decoration:none;color:#3498db;} a:hover{text-decoration:underline;}</style>";
+    html << "</head><body>";
+    html << "<h1>Index of " << uri << "</h1><hr>";
+    
+    DIR* dir = opendir(dir_path.c_str());
+    if (dir == NULL) {
+        log_error("Cannot open directory: " + dir_path);
+        html << "<p>Error: Cannot read directory</p>";
+        html << "</body></html>";
+        return generateSuccessResponse(html.str(), "text/html");
+    }
+    
+    html << "<table>";
+    html << "<tr><th>Name</th><th>Size</th><th>Type</th></tr>";
+    
+    if (uri != "/")
+        html << "<tr><td><a href=\"../\">../</a></td><td>-</td><td>Directory</td></tr>";
+    
+    struct dirent* entry;
+    std::vector<std::string> files;
+    std::vector<std::string> directories;
+    
+    while ((entry = readdir(dir)) != NULL) {
+        std::string name = entry->d_name;
+        if (name == "." || (name[0] == '.' && name != ".."))
+            continue;
+        
+        std::string full_path = dir_path + "/" + name;
+        if (isDirectory(full_path))
+            directories.push_back(name);
+		else
+            files.push_back(name);
+    }
+    closedir(dir);
+    
+    std::sort(directories.begin(), directories.end());
+    std::sort(files.begin(), files.end());
+    
+    for (size_t i = 0; i < directories.size(); ++i) {
+        std::string name = directories[i];
+        html << "<tr><td><a href=\"" << name << "/\">" << name << "/</a></td>";
+        html << "<td>-</td><td>Directory</td></tr>";
+    }
+    
+    for (size_t i = 0; i < files.size(); ++i) {
+        std::string name = files[i];
+        std::string full_path = dir_path + "/" + name;
+        struct stat file_stat;
+        std::string size_str = "-";
+        if (stat(full_path.c_str(), &file_stat) == 0) {
+            size_str = size_t_to_string(file_stat.st_size) + " bytes";
+        }
+        std::string type = getContentType(name);
+        
+        html << "<tr><td><a href=\"" << name << "\">" << name << "</a></td>";
+        html << "<td>" << size_str << "</td><td>" << type << "</td></tr>";
+    }
+    html << "</table>";
+    html << "<hr><p>Generated by Webserv/1.0</p>";
+    html << "</body></html>";
+    
+    return generateSuccessResponse(html.str(), "text/html");
 }
