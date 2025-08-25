@@ -6,7 +6,7 @@
 /*   By: christian <christian@student.42.fr>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/03 07:04:49 by christian         #+#    #+#             */
-/*   Updated: 2025/08/24 17:24:01 by christian        ###   ########.fr       */
+/*   Updated: 2025/08/25 17:58:08 by christian        ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -225,32 +225,28 @@ void WebServer::handleClientWrite(int client_fd, int poll_index) {
 }
 
 void WebServer::handleClientData(int client_fd, int poll_index) {
-    LOG_DEBUG("Reading data from client " + size_t_to_string(client_fd));
-    char buffer[8192];
-    ssize_t bytes_read = recv(client_fd, buffer, sizeof(buffer) - 1, MSG_DONTWAIT);
-    LOG_DEBUG("recv() returned " + size_t_to_string(bytes_read) + " bytes");
+	LOG_DEBUG("Reading data from client " + size_t_to_string(client_fd));
+	char buffer[8192];
+	ssize_t bytes_read = recv(client_fd, buffer, sizeof(buffer) - 1, MSG_DONTWAIT);
+	LOG_DEBUG("recv() returned " + size_t_to_string(bytes_read) + " bytes");
 
-    if (bytes_read <= 0) {
-        if (bytes_read == 0)
-            log_info("Client " + size_t_to_string(client_fd) + " disconnected");
-        else
-            log_error("recv() failed for client " + size_t_to_string(client_fd));
-        cleanupClient(client_fd, poll_index);
-        return;
-    }
-    // buffer[bytes_read] = '\0';
-    _client_buffers[client_fd].append(buffer, bytes_read);
-    LOG_DEBUG("Buffer for client " + size_t_to_string(client_fd) + " now has " + size_t_to_string(_client_buffers[client_fd].length()) + " bytes");
+	if (bytes_read <= 0) {
+		if (bytes_read == 0)
+			log_info("Client " + size_t_to_string(client_fd) + " disconnected");
+		else
+			log_error("recv() failed for client " + size_t_to_string(client_fd));
+		cleanupClient(client_fd, poll_index);
+		return;
+	}
+	// buffer[bytes_read] = '\0';
+	_client_buffers[client_fd].append(buffer, bytes_read);
+	LOG_DEBUG("Buffer for client " + size_t_to_string(client_fd) + " now has " + size_t_to_string(_client_buffers[client_fd].length()) + " bytes");
 
-    std::string& client_buffer = _client_buffers[client_fd];
-    size_t header_end_pos = client_buffer.find("\r\n\r\n");
-    if (header_end_pos == std::string::npos) {
-        header_end_pos = client_buffer.find("\n\n");
-        if (header_end_pos != std::string::npos)
-            header_end_pos += 2;
-    } else
-        header_end_pos += 4;
-
+	std::string& client_buffer = _client_buffers[client_fd];
+	size_t header_end_pos = client_buffer.find("\r\n\r\n");
+	if (header_end_pos != std::string::npos) {
+		header_end_pos += 4;
+	}
     if (header_end_pos == std::string::npos) {
         LOG_DEBUG("Headers not complete yet, waiting for more data from client " + size_t_to_string(client_fd));
         return;

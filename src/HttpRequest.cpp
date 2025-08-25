@@ -3,7 +3,10 @@
 #include <sstream>
 #include <algorithm>
 
-HttpRequest::HttpRequest() : _method(UNKNOWN), _is_complete(false), _is_chunked(false), _bytes_remaining(0), _is_multipart(false) {
+// HttpRequest::HttpRequest() : _method(UNKNOWN), _is_complete(false), _is_chunked(false), _bytes_remaining(0), _is_multipart(false) {
+// }
+
+HttpRequest::HttpRequest() : _method(UNKNOWN), _is_complete(false), _is_chunked(false), _is_multipart(false) {
 }
 
 HttpRequest::~HttpRequest() {
@@ -77,12 +80,9 @@ bool HttpRequest::parseRequest(const std::string& raw_request) {
     }
 
     size_t body_start = raw_request.find("\r\n\r\n");
-    if (body_start == std::string::npos) {
-        body_start = raw_request.find("\n\n");
-        if (body_start != std::string::npos)
-            body_start += 2;
-    } else
-        body_start += 4;
+    if (body_start == std::string::npos)
+    return false;
+    body_start += 4;
 
     if (body_start == std::string::npos)
         return false;
@@ -114,6 +114,7 @@ bool HttpRequest::parseRequest(const std::string& raw_request) {
         return false;
     }
 }
+
 }
 bool HttpRequest::parseMultipartData() {
     std::string content_type = getHeader("Content-Type");

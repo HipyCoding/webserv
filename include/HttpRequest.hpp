@@ -28,7 +28,7 @@ private:
     std::string _body;
     bool _is_complete;
     bool _is_chunked;
-    size_t _bytes_remaining;
+    // size_t _bytes_remaining;
     std::string _chunk_buffer;
 
     std::map<std::string, std::string> _form_data;
