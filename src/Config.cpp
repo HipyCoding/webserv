@@ -54,24 +54,24 @@ void Config::parseSimpleDirective(const std::string& line, ServerConfig& server)
 		} else {
 			server.port = atoi(value.c_str());
 		}
-		log_debug("parsed listen: " + server.host + ":" + int_to_string(server.port));
+		LOG_DEBUG("parsed listen: " + server.host + ":" + int_to_string(server.port));
 	} else if (key == "server_name") {
 		server.server_name = value;
-		log_debug("parsed server_name: " + value);
+		LOG_DEBUG("parsed server_name: " + value);
 	} else if (key == "root") {
 		server.root = value;
-		log_debug("parsed root: " + value);
+		LOG_DEBUG("parsed root: " + value);
 	} else if (key == "index") {
 		server.index = value;
-		log_debug("parsed index: " + value);
+		LOG_DEBUG("parsed index: " + value);
 	} else if (key == "client_max_body_size") {  // add this
 		server.client_max_body_size = atoi(value.c_str());
-		log_debug("parsed client_max_body_size: " + value);
+		LOG_DEBUG("parsed client_max_body_size: " + value);
 	} else if (key == "error_page") {  // add this
 		parseErrorPage(line, server.error_pages);
-		log_debug("parsed error_page");
+		LOG_DEBUG("parsed error_page");
 	} else {
-		log_debug("unknown dir: " + key);
+		LOG_DEBUG("unknown dir: " + key);
 	}
 }
 
@@ -187,17 +187,17 @@ const LocationConfig* Config::findLocationConfig(const ServerConfig& server, con
 bool Config::validateConfig() const {
 	for (std::vector<ServerConfig>::const_iterator it = _servers.begin(); it != _servers.end(); ++it) {
 		if (it->port <= 0 || it->port > 65535) {
-			log_error("invalid port number " + int_to_string(it->port));
+			LOG_ERROR("invalid port number " + int_to_string(it->port));
 			return false;
 		}
 		
 		if (it->root.empty()) {
-			log_error("empty root directory");
+			LOG_ERROR("empty root directory");
 			return false;
 		}
 		
 		if (it->client_max_body_size == 0) {
-			log_error("invalid client_max_body_size");
+			LOG_ERROR("invalid client_max_body_size");
 			return false;
 		}
 	}
@@ -208,7 +208,7 @@ bool Config::validateConfig() const {
 bool Config::parseConfigFile(const std::string& filename) {
 	std::ifstream file(filename.c_str());
 	if (!file.is_open()) {
-		log_error("cant open config file: " + filename);
+		LOG_ERROR("cant open config file: " + filename);
 		return false;
 	}
 

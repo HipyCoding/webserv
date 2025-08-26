@@ -63,7 +63,7 @@ std::vector<std::string> Config::splitLine(const std::string& line) {
 bool Config::handleDirective(bool in_server_block, const std::string& line, ServerConfig& current_server, int line_number, std::ifstream& file) {
 	if (isLocationStart(line)) {
 		if (!in_server_block) {
-			log_error("location directive outside server block (line " + int_to_string(line_number) + ")");
+			LOG_ERROR("location directive outside server block (line " + int_to_string(line_number) + ")");
 			return false;
 		}
 		std::string location_path = extractLocationPath(line);
@@ -71,7 +71,7 @@ bool Config::handleDirective(bool in_server_block, const std::string& line, Serv
 	}
 	
 	if (!in_server_block) {
-		log_error("directive outside server block (line " + int_to_string(line_number) + ")");
+		LOG_ERROR("directive outside server block (line " + int_to_string(line_number) + ")");
 		return false;
 	}
 	parseSimpleDirective(line, current_server);
@@ -80,12 +80,12 @@ bool Config::handleDirective(bool in_server_block, const std::string& line, Serv
 
 bool Config::finalizeConfig(bool in_server_block) {
 	if (in_server_block) {
-		log_error("unclosed server block");
+		LOG_ERROR("unclosed server block");
 		return false;
 	}
 		
 	if (_servers.empty()) {
-		log_info("no servers configured, using default");
+		LOG_INFO("no servers configured, using default");
 		setDefaultConfig();
 	}
 		
@@ -101,7 +101,7 @@ bool Config::handleServerStart(bool& in_server_block, ServerConfig& current_serv
 	}
 	in_server_block = true;
 	current_server = getDefaultServerConfig();
-	log_debug("found server block");
+	LOG_DEBUG("found server block");
 	return true;
 }
 
@@ -114,6 +114,6 @@ bool Config::handleServerEnd(bool& in_server_block, ServerConfig& current_server
 	}
 	in_server_block = false;
 	_servers.push_back(current_server);
-	log_info("parsed server: " + current_server.host + ":" + int_to_string(current_server.port));
+	LOG_INFO("parsed server: " + current_server.host + ":" + int_to_string(current_server.port));
 	return true;
 }

@@ -17,6 +17,7 @@
 #include <fstream>
 #include <sys/stat.h>
 #include <dirent.h>
+#include <signal.h>
 
 #include "WebServer.hpp"
 #include "Config.hpp"
@@ -74,7 +75,6 @@ class WebServer {
 
     // server utilities
     std::string generateSuccessResponse(const std::string& content, const std::string& content_type);
-	std::string generateErrorResponse(int status_code, const std::string& status_text);
 	std::string getStatusMessage(int code);
 	std::string getContentType(const std::string& file_path);
 	// std::string getFilePath(const std::string& uri);
@@ -90,6 +90,7 @@ public:
     ~WebServer();
     
     bool initialize(const std::string& config_file);
+	std::string generateErrorResponse(int status_code, const std::string& status_text);
     void run();
     void cleanup();
 };

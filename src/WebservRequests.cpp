@@ -65,7 +65,7 @@ std::string WebServer::handleGetRequest(const HttpRequest& request) {
 
     const ServerConfig* server_config = _config->findServerConfig("127.0.0.1", 8080, "");
     if (!server_config) {
-        log_error("no server config found");
+        LOG_ERROR("no server config found");
         return generateErrorResponse(500, "Internal Server Error");
     }
 
@@ -152,7 +152,7 @@ std::string WebServer::handlePostRequest(const HttpRequest& request) {
         return handleFileUploadToLocation(request, location_config);
     
     std::string body = request.getBody();
-    log_info("POST request for: " + uri + " (body: " + size_t_to_string(body.length()) + " bytes)");
+    LOG_INFO("POST request for: " + uri + " (body: " + size_t_to_string(body.length()) + " bytes)");
 
     if (uri.find("/upload") == 0)
         return handleFileUpload(request);
@@ -197,7 +197,7 @@ std::string WebServer::handleDeleteRequest(const HttpRequest& request) {
 	
 	std::string file_path = getFilePathWithRoot(uri, root);
 	
-	log_info("DELETE request for: " + file_path);
+	LOG_INFO("DELETE request for: " + file_path);
 	
 	if (!fileExists(file_path))
 		return generateErrorResponse(404, "Not Found");
@@ -318,7 +318,7 @@ std::string WebServer::handleMultipartUpload(const HttpRequest& request) {
             }
             html << "</div>";
             
-            log_info("Saved uploaded file: " + file.filename + " as " + filename.str() + 
+            LOG_INFO("Saved uploaded file: " + file.filename + " as " + filename.str() + 
                     " (" + size_t_to_string(file.content.length()) + " bytes)");
         }
     }
@@ -489,7 +489,7 @@ std::string WebServer::generateDirectoryListing(const std::string& dir_path, con
     
     DIR* dir = opendir(dir_path.c_str());
     if (dir == NULL) {
-        log_error("Cannot open directory: " + dir_path);
+        LOG_ERROR("Cannot open directory: " + dir_path);
         html << "<p>Error: Cannot read directory</p>";
         html << "</body></html>";
         return generateSuccessResponse(html.str(), "text/html");

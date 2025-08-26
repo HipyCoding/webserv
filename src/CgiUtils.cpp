@@ -112,6 +112,10 @@ std::string CgiHandler::getScriptPath(const std::string& uri) const {
 
 std::string CgiHandler::generateErrorResponse(int status_code,
 		const std::string& status_text) const {
+
+     if (_web_server) {
+        return _web_server->generateErrorResponse(status_code, status_text);
+    }
 	std::ostringstream response;
 	std::ostringstream body;
 	

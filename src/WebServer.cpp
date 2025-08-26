@@ -6,7 +6,7 @@
 /*   By: christian <christian@student.42.fr>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/03 07:04:49 by christian         #+#    #+#             */
-/*   Updated: 2025/08/25 17:58:08 by christian        ###   ########.fr       */
+/*   Updated: 2025/08/26 14:47:05 by christian        ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,7 +17,8 @@
 #include <sstream>
 
 WebServer::WebServer() : _config(NULL){
-	_cgi_handler = new CgiHandler();  // tte
+	_cgi_handler = new CgiHandler();
+	_cgi_handler->setWebServer(this);
 }
 
 WebServer::~WebServer() {
@@ -29,7 +30,7 @@ bool WebServer::initialize(const std::string& config_file) {
 	_config = new Config();
 	
 	if (!_config->parseConfigFile(config_file)) {
-		log_info("Using default configuration");
+		LOG_INFO("Using default configuration");
 		_config->setDefaultConfig();
 	}
 	
@@ -38,7 +39,7 @@ bool WebServer::initialize(const std::string& config_file) {
 	for (size_t i = 0; i < servers.size(); ++i) {
 		int server_fd = createServerSocket(servers[i].host, servers[i].port);
 		if (server_fd == -1) {
-			log_error("Failed to create server socket for " + servers[i].host + ":" + size_t_to_string(servers[i].port));
+			LOG_ERROR("Failed to create server socket for " + servers[i].host + ":" + size_t_to_string(servers[i].port));
 			return false;
 		}
 		
@@ -50,7 +51,7 @@ bool WebServer::initialize(const std::string& config_file) {
 		pfd.revents = 0;
 		_poll_fds.push_back(pfd);
 		
-		log_info("Server listening on " + servers[i].host + ":" + size_t_to_string(servers[i].port));
+		LOG_INFO("Server listening on " + servers[i].host + ":" + size_t_to_string(servers[i].port));
 	}
 	
 	return true;
@@ -59,19 +60,19 @@ bool WebServer::initialize(const std::string& config_file) {
 int WebServer::createServerSocket(const std::string& host, int port) {
 	int server_fd = socket(AF_INET, SOCK_STREAM, 0);
 	if (server_fd == -1) {
-		log_error("Failed to create socket");
+		LOG_ERROR("Failed to create socket");
 		return -1;
 	}
 	
 	int opt = 1;
 	if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) == -1) {
-		log_error("Failed to set socket options");
+		LOG_ERROR("Failed to set socket options");
 		close(server_fd);
 		return -1;
 	}
 	
 	if (fcntl(server_fd, F_SETFL, O_NONBLOCK) == -1) {
-		log_error("Failed to set socket to non-blocking");
+		LOG_ERROR("Failed to set socket to non-blocking");
 		close(server_fd);
 		return -1;
 	}
@@ -83,13 +84,13 @@ int WebServer::createServerSocket(const std::string& host, int port) {
 	addr.sin_addr.s_addr = inet_addr(host.c_str());
 	
 	if (bind(server_fd, (struct sockaddr*)&addr, sizeof(addr)) == -1) {
-		log_error("Failed to bind socket to " + host + ":" + size_t_to_string(port));
+		LOG_ERROR("Failed to bind socket to " + host + ":" + size_t_to_string(port));
 		close(server_fd);
 		return -1;
 	}
 	
 	if (listen(server_fd, 128) == -1) {
-		log_error("Failed to listen on socket");
+		LOG_ERROR("Failed to listen on socket");
 		close(server_fd);
 		return -1;
 	}
@@ -97,8 +98,8 @@ int WebServer::createServerSocket(const std::string& host, int port) {
 	return server_fd;
 }
 void WebServer::run() {
-	log_info("Server entering main loop...");
 	while (true) {
+		LOG_INFO("server running...");
 		checkClientTimeouts();
 		// set up poll events for both read and write
 		for (size_t i = 0; i < _poll_fds.size(); ++i) {
@@ -116,7 +117,7 @@ void WebServer::run() {
 		LOG_DEBUG("Poll returned: " + size_t_to_string(poll_count));
 		
 		if (poll_count == -1) {
-			log_error("Poll error");
+			LOG_ERROR("Poll error");
 			break;
 		}
 		
@@ -159,7 +160,7 @@ void WebServer::checkClientTimeouts() {
 	for (size_t i = 0; i < timed_out_clients.size(); i++) {
 		for(size_t j = 0; j < _poll_fds.size(); ++j) {
 			if (_poll_fds[j].fd == timed_out_clients[i]) {
-				log_info("Client " + size_t_to_string(timed_out_clients[i]) + " timed out");
+				LOG_INFO("Client " + size_t_to_string(timed_out_clients[i]) + " timed out");
 				cleanupClient(timed_out_clients[i], j);
 				break ;
 			}
@@ -174,14 +175,14 @@ void WebServer::handleNewConnection(int server_fd) {
 
 	int client_fd = accept(server_fd, (struct sockaddr*)&client_addr, &client_len);
 	if (client_fd == -1) {
-		log_error("Accept failed");
+		LOG_ERROR("Accept failed");
 		return;
 	}
 
-	log_info("New client connected: fd = " + size_t_to_string(client_fd));
+	LOG_INFO("New client connected: fd = " + size_t_to_string(client_fd));
 	
 	if (fcntl(client_fd, F_SETFL, O_NONBLOCK) == -1) {
-		log_error("fcntl failed");
+		LOG_ERROR("fcntl failed");
 		close(client_fd);
 		return;
 	}
@@ -211,7 +212,7 @@ void WebServer::handleClientWrite(int client_fd, int poll_index) {
 	ssize_t bytes_sent = send(client_fd, response.c_str(), response.length(), MSG_DONTWAIT);
 	
 	if (bytes_sent <= 0) {
-		log_error("send() failed for client " + size_t_to_string(client_fd));
+		LOG_ERROR("send() failed for client " + size_t_to_string(client_fd));
 		cleanupClient(client_fd, poll_index);
 		return;
 	}
@@ -231,9 +232,9 @@ void WebServer::handleClientData(int client_fd, int poll_index) {
 
 	if (bytes_read <= 0) {
 		if (bytes_read == 0)
-			log_info("Client " + size_t_to_string(client_fd) + " disconnected");
+			LOG_INFO("Client " + size_t_to_string(client_fd) + " disconnected");
 		else
-			log_error("recv() failed for client " + size_t_to_string(client_fd));
+			LOG_ERROR("recv() failed for client " + size_t_to_string(client_fd));
 		cleanupClient(client_fd, poll_index);
 		return;
 	}
@@ -315,7 +316,7 @@ void WebServer::cleanupClient(int client_fd, int poll_index) {
         _client_requests.erase(client_fd);
     }
     
-    log_info("Client " + size_t_to_string(client_fd) + " connection closed");
+    LOG_INFO("Client " + size_t_to_string(client_fd) + " connection closed");
 }
 
 void WebServer::queueResponse(int client_fd, const std::string& response) {
@@ -325,7 +326,7 @@ void WebServer::queueResponse(int client_fd, const std::string& response) {
 }
 
 void WebServer::cleanup() {
-	log_info("Cleaning up WebServer...");
+	LOG_INFO("Cleaning up WebServer...");
 	for (size_t i = 0; i < _server_sockets.size(); ++i) {
 		close(_server_sockets[i]);
 		LOG_DEBUG("Closed server socket " + size_t_to_string(_server_sockets[i]));
@@ -348,5 +349,5 @@ void WebServer::cleanup() {
 		delete _cgi_handler;
 		_cgi_handler = NULL;
 	}
-	log_info("WebServer cleanup complete");
+	LOG_INFO("WebServer cleanup complete");
 }
