@@ -9,7 +9,7 @@
 std::string WebServer::readFile(const std::string& file_path) {
 	std::ifstream file(file_path.c_str(), std::ios::binary);
 	if (!file.is_open()) {
-		log_error("Cannot open file: " + file_path);
+		LOG_ERROR("Cannot open file: " + file_path);
 		return "";
 	}
 	
@@ -19,7 +19,7 @@ std::string WebServer::readFile(const std::string& file_path) {
 	
 	std::string buffer(size, '\0');
 	if (!file.read(&buffer[0], size)) {
-		log_error("Failed to read file: " + file_path);
+		LOG_ERROR("Failed to read file: " + file_path);
 		return "";
 	}
 	

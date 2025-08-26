@@ -6,7 +6,7 @@ WebServer* g_server_instance = NULL;
 
 void signal_handler(int sig) {
     if (g_server_instance && (sig == SIGINT || sig == SIGTERM)) {
-        log_info("Received signal " + size_t_to_string(sig) + ", shutting down gracefully...");
+        LOG_INFO("Received signal " + size_t_to_string(sig) + ", shutting down gracefully...");
         g_server_instance->cleanup();
         exit(0);
     }
@@ -23,11 +23,10 @@ int main(int argc, char* argv[]) {
     g_server_instance = &server;
 
     if (!server.initialize(config_file)) {
-        log_error("Server initialization failed");
+        LOG_ERROR("Server initialization failed");
         return 1;
     }
 
-    log_info("starting webserver...");
     server.run();
 
     server.cleanup();

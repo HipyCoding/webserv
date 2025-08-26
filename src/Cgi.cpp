@@ -33,7 +33,7 @@ void CgiHandler::initializeInterpreters() {
 
 bool CgiHandler::isCgiRequest(const std::string& uri) const {
 	if (uri.find("/cgi-bin/") == 0) {
-		log_debug(uri + " found in cgi-bin");
+		LOG_DEBUG(uri + " found in cgi-bin");
 		return true;
 	}
 		
@@ -54,18 +54,18 @@ std::string CgiHandler::handleCgiRequest(const HttpRequest& request) const {
 	std::string uri = request.getUri();
 	std::string script_path = getScriptPath(uri);
 	
-	log_debug("cgi request for: " + script_path);
+	LOG_DEBUG("cgi request for: " + script_path);
 
 	if(!fileExists(script_path)) {
-		log_error("cgi script not found: " + script_path);
+		LOG_ERROR("cgi script not found: " + script_path);
 		return generateErrorResponse(404, "CGI Script Not Found");
 	}
 	if (!isExecutable(script_path)) {
-		log_error("cgi script not executable: " + script_path);
+		LOG_ERROR("cgi script not executable: " + script_path);
 		return generateErrorResponse(403, "CGI Script Not Executable");
 	}
 
-	log_debug("cgi script is executable, going to execution");
+	LOG_DEBUG("cgi script is executable, going to execution");
 	return execute(script_path, request, _interpreters);
 }
 
@@ -90,7 +90,7 @@ std::string CgiHandler::execute(const std::string& script_path,
 
 	if (pid == 0) {
 	setupChildProcess(pipe_stdout, pipe_stdin, request, script_path, interpreters);
-	log_error("error in child");
+	LOG_ERROR("error in child");
 	exit(1);
 	}
 	return handleParentProcess(pipe_stdout, pipe_stdin, request, pid);
@@ -153,7 +153,7 @@ bool CgiHandler::waitForCgiCompletion(pid_t child_pid) const {
 	waitpid(child_pid, &status, 0);
 	
 	if (WEXITSTATUS(status) != 0) {
-		log_error("CGI script exited with non-zero status");
+		LOG_ERROR("CGI script exited with non-zero status");
 		return false;
 	}
 	
@@ -251,13 +251,13 @@ std::string CgiHandler::handleParentProcess(int pipe_stdout[2], int pipe_stdin[2
 		if (poll_result == -1) {
 			kill(child_pid, SIGKILL);
 			waitpid(child_pid, NULL, 0);
-			log_error("CGI poll failed");
+			LOG_ERROR("CGI poll failed");
 			break;
 		}
 		if (poll_result == 0) {
 			kill(child_pid, SIGKILL);
 			waitpid(child_pid, NULL, 0);
-			log_error("CGI timeout");
+			LOG_ERROR("CGI timeout");
 			break;
 		}
 		if (cgi_fds[0].revents & POLLIN) {// reading from cgi stdout
