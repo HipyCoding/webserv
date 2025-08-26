@@ -12,9 +12,12 @@ void signal_handler(int sig) {
     }
 }
 int main(int argc, char* argv[]) {
-    std::string config_file = "config/default.conf";
-    if (argc > 1)
-        config_file = argv[1];
+    if (argc != 2){
+        std::cerr << "Usage: " << argv[0] << " <config_file>" << std::endl;
+        std::cerr << "Example: " << argv[0] << " config/default.conf" << std::endl;
+        return 1;
+    }
+    std::string config_file = argv[1];
     signal(SIGINT, signal_handler);
     signal(SIGTERM, signal_handler);
     signal(SIGPIPE, SIG_IGN);
