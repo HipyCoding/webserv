@@ -1,12 +1,21 @@
 #include "Cgi.hpp"
 #include "utils.hpp"
 
-CgiHandler::CgiHandler() : _cgi_bin_path("./www/cgi-bin") {
-	initializeInterpreters();
+CgiHandler::CgiHandler() : _cgi_bin_path("./www/cgi-bin"), _web_server(NULL) {
+    initializeInterpreters();
 }
 
-CgiHandler::CgiHandler(const std::string& cgi_bin_path) : _cgi_bin_path(cgi_bin_path) {
-	initializeInterpreters();
+CgiHandler::CgiHandler(const std::string& cgi_bin_path) : _cgi_bin_path(cgi_bin_path), _web_server(NULL) {
+    initializeInterpreters();
+}
+
+CgiHandler::CgiHandler(const std::string& cgi_bin_path, WebServer* web_server) 
+    : _cgi_bin_path(cgi_bin_path), _web_server(web_server) {
+    initializeInterpreters();
+}
+
+void CgiHandler::setWebServer(WebServer* web_server) {
+    _web_server = web_server;
 }
 
 CgiHandler::~CgiHandler() {

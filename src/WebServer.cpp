@@ -6,7 +6,7 @@
 /*   By: christian <christian@student.42.fr>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/03 07:04:49 by christian         #+#    #+#             */
-/*   Updated: 2025/08/25 17:58:08 by christian        ###   ########.fr       */
+/*   Updated: 2025/08/26 13:48:17 by christian        ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,7 +17,8 @@
 #include <sstream>
 
 WebServer::WebServer() : _config(NULL){
-	_cgi_handler = new CgiHandler();  // tte
+	_cgi_handler = new CgiHandler();
+	_cgi_handler->setWebServer(this);
 }
 
 WebServer::~WebServer() {

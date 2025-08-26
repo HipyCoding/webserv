@@ -14,13 +14,18 @@
 #include <fcntl.h>
 #include <cstdlib>
 #include <poll.h>
+#include <signal.h>
 #include "HttpRequest.hpp"
+#include "WebServer.hpp"
 #include "utils.hpp"
+
+class WebServer;
 
 class CgiHandler {
 private:
 	std::string _cgi_bin_path;
 	std::map<std::string, std::string> _interpreters;
+	WebServer* _web_server;
 
 	// pipes
 	bool createPipes(int pipe_stdout[2], int pipe_stdin[2]) const;
@@ -64,6 +69,7 @@ private:
 public:
 	CgiHandler();
 	CgiHandler(const std::string& cgi_bin_path);
+	CgiHandler(const std::string& cgi_bin_path, WebServer* web_server);
 	~CgiHandler();
 	
 	bool isCgiRequest(const std::string& uri) const;
@@ -72,6 +78,7 @@ public:
 					   const HttpRequest& request,
 					   const std::map<std::string, std::string>& interpreters) const;
 	std::string handleCgiRequest(const HttpRequest& request) const;
+	void setWebServer(WebServer* web_server);
 };
 
 #endif
