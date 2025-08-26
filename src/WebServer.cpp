@@ -16,14 +16,13 @@
 #include "utils.hpp"
 #include <sstream>
 
-WebServer::WebServer() : _config(NULL) {
+WebServer::WebServer() : _config(NULL){
 	_cgi_handler = new CgiHandler();  // tte
 }
 
 WebServer::~WebServer() {
 	cleanup();
 	delete _config;
-	delete _cgi_handler;  // tte
 }
 
 bool WebServer::initialize(const std::string& config_file) {
@@ -266,14 +265,13 @@ void WebServer::handleClientData(int client_fd, int poll_index) {
             break;
         }
     }
-    static std::map<int, HttpRequest*> client_requests;
     
     HttpRequest* request = NULL;
-    if (client_requests.find(client_fd) == client_requests.end()) {
+    if (_client_requests.find(client_fd) == _client_requests.end()) {
         request = new HttpRequest();
-        client_requests[client_fd] = request;
+        _client_requests[client_fd] = request;
     } else
-        request = client_requests[client_fd];
+        request = _client_requests[client_fd];
     if (!request->parseRequest(client_buffer)) {
         LOG_DEBUG("Request parsing failed, waiting for more data from client " + size_t_to_string(client_fd));
         return;
@@ -288,7 +286,7 @@ void WebServer::handleClientData(int client_fd, int poll_index) {
         std::string error_response = generateErrorResponse(413, "Request Entity Too Large");
         queueResponse(client_fd, error_response);
         delete request;
-        client_requests.erase(client_fd);
+        _client_requests.erase(client_fd);
         _client_buffers.erase(client_fd);
         return;
     }
@@ -299,7 +297,7 @@ void WebServer::handleClientData(int client_fd, int poll_index) {
     queueResponse(client_fd, response);
     
     delete request;
-    client_requests.erase(client_fd);
+    _client_requests.erase(client_fd);
     _client_buffers.erase(client_fd);
 }
 
@@ -311,11 +309,10 @@ void WebServer::cleanupClient(int client_fd, int poll_index) {
     _client_write_buffers.erase(client_fd);
     _clients_ready_to_write.erase(client_fd);
     _client_timeouts.erase(client_fd);
-    
-    static std::map<int, HttpRequest*> client_requests;
-    if (client_requests.find(client_fd) != client_requests.end()) {
-        delete client_requests[client_fd];
-        client_requests.erase(client_fd);
+
+    if (_client_requests.find(client_fd) != _client_requests.end()) {
+        delete _client_requests[client_fd];
+        _client_requests.erase(client_fd);
     }
     
     log_info("Client " + size_t_to_string(client_fd) + " connection closed");
@@ -333,8 +330,23 @@ void WebServer::cleanup() {
 		close(_server_sockets[i]);
 		LOG_DEBUG("Closed server socket " + size_t_to_string(_server_sockets[i]));
 	}
-	
-	delete _config;
-	_config = NULL;
+	_server_sockets.clear();
+	for (std::map<int, HttpRequest*>::iterator it = _client_requests.begin();
+		it != _client_requests.end(); it++)
+		delete it->second;
+	_client_requests.clear();
+	  for (size_t i = 0; i < _poll_fds.size(); ++i) {
+        if (_poll_fds[i].fd > 0)
+            close(_poll_fds[i].fd);
+    }
+    _poll_fds.clear();
+	_client_buffers.clear();
+	_client_write_buffers.clear();
+	_clients_ready_to_write.clear();
+	_client_timeouts.clear();
+	if (_config){
+		delete _cgi_handler;
+		_cgi_handler = NULL;
+	}
 	log_info("WebServer cleanup complete");
 }

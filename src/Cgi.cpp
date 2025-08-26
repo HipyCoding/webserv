@@ -10,6 +10,7 @@ CgiHandler::CgiHandler(const std::string& cgi_bin_path) : _cgi_bin_path(cgi_bin_
 }
 
 CgiHandler::~CgiHandler() {
+	
 }
 
 void CgiHandler::initializeInterpreters() {
@@ -237,12 +238,16 @@ std::string CgiHandler::handleParentProcess(int pipe_stdout[2], int pipe_stdin[2
 	bool stdin_closed = false;
 	
 	while (true) {
-		int poll_result = poll(&cgi_fds[0], cgi_fds.size(), 5000);  // 5s timeout
+		int poll_result = poll(&cgi_fds[0], cgi_fds.size(), 30000);  // 5s timeout
 		if (poll_result == -1) {
+			kill(child_pid, SIGKILL);
+			waitpid(child_pid, NULL, 0);
 			log_error("CGI poll failed");
 			break;
 		}
 		if (poll_result == 0) {
+			kill(child_pid, SIGKILL);
+			waitpid(child_pid, NULL, 0);
 			log_error("CGI timeout");
 			break;
 		}

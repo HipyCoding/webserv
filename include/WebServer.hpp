@@ -41,6 +41,7 @@ class WebServer {
 	std::map<int, std::string> _client_write_buffers; // outgoing buffer
 	std::map<int, bool> _clients_ready_to_write;     // check clients with queued responses
 	std::map<int, time_t> _client_timeouts;
+	std::map<int, HttpRequest*> _client_requests;
 	static const int REQUEST_TIMEOUT = 30;
     // sockets
     int createServerSocket(const std::string& host, int port);
