@@ -6,7 +6,7 @@
 /*   By: christian <christian@student.42.fr>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/03 07:04:49 by christian         #+#    #+#             */
-/*   Updated: 2025/08/26 14:47:05 by christian        ###   ########.fr       */
+/*   Updated: 2025/08/26 20:53:00 by christian        ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -238,7 +238,7 @@ void WebServer::handleClientData(int client_fd, int poll_index) {
 		cleanupClient(client_fd, poll_index);
 		return;
 	}
-	// buffer[bytes_read] = '\0';
+	buffer[bytes_read] = '\0';
 	_client_buffers[client_fd].append(buffer, bytes_read);
 	LOG_DEBUG("Buffer for client " + size_t_to_string(client_fd) + " now has " + size_t_to_string(_client_buffers[client_fd].length()) + " bytes");
 
