@@ -274,8 +274,8 @@ std::string CgiHandler::handleParentProcess(int pipe_stdout[2], int pipe_stdin[2
 
 	closeCgiPipes(pipe_stdout, pipe_stdin, stdin_closed);
 	
-	if (!waitForCgiCompletion(child_pid))
-		return generateErrorResponse(500, "CGI Script Execution Error");
+	// if (!waitForCgiCompletion(child_pid))
+	// 	return generateErrorResponse(500, "CGI Script Execution Error");
 
 	return parseCgiOutput(output);
 }
