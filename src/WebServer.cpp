@@ -24,14 +24,15 @@ WebServer::WebServer() : _config(NULL){
 WebServer::~WebServer() {
 	cleanup();
 	delete _config;
+	delete _cgi_handler; 
 }
 
 bool WebServer::initialize(const std::string& config_file) {
 	_config = new Config();
 	
 	if (!_config->parseConfigFile(config_file)) {
-		LOG_INFO("Using default configuration");
-		_config->setDefaultConfig();
+		LOG_INFO("no such config file");
+		return false;
 	}
 	
 	const std::vector<ServerConfig>& servers = _config->getServers();
@@ -271,12 +272,12 @@ void WebServer::handleClientData(int client_fd, int poll_index) {
     if (_client_requests.find(client_fd) == _client_requests.end()) {
         request = new HttpRequest();
         _client_requests[client_fd] = request;
-    } else
+     } else
         request = _client_requests[client_fd];
     if (!request->parseRequest(client_buffer)) {
-        LOG_DEBUG("Request parsing failed, waiting for more data from client " + size_t_to_string(client_fd));
-        return;
-    }
+       		LOG_DEBUG("Request parsing failed, waiting for more data from client " + size_t_to_string(client_fd));
+       		return;
+    	}
     if (request->needsMoreChunks()) {
         LOG_DEBUG("Chunked request needs more data from client " + size_t_to_string(client_fd));
         return;
@@ -326,28 +327,64 @@ void WebServer::queueResponse(int client_fd, const std::string& response) {
 }
 
 void WebServer::cleanup() {
-	LOG_INFO("Cleaning up WebServer...");
-	for (size_t i = 0; i < _server_sockets.size(); ++i) {
-		close(_server_sockets[i]);
-		LOG_DEBUG("Closed server socket " + size_t_to_string(_server_sockets[i]));
-	}
-	_server_sockets.clear();
-	for (std::map<int, HttpRequest*>::iterator it = _client_requests.begin();
-		it != _client_requests.end(); it++)
-		delete it->second;
-	_client_requests.clear();
-	  for (size_t i = 0; i < _poll_fds.size(); ++i) {
-        if (_poll_fds[i].fd > 0)
-            close(_poll_fds[i].fd);
+    LOG_INFO("Cleaning up WebServer...");
+    
+    for (std::map<int, HttpRequest*>::iterator it = _client_requests.begin();
+         it != _client_requests.end(); ++it) {
+        delete it->second;
     }
-    _poll_fds.clear();
-	_client_buffers.clear();
-	_client_write_buffers.clear();
-	_clients_ready_to_write.clear();
-	_client_timeouts.clear();
-	if (_config){
-		delete _cgi_handler;
-		_cgi_handler = NULL;
-	}
-	LOG_INFO("WebServer cleanup complete");
+    _client_requests.clear();
+    
+    for (size_t i = 0; i < _poll_fds.size(); ++i) {
+        if (_poll_fds[i].fd > 0) {
+            close(_poll_fds[i].fd);
+            LOG_DEBUG("Closed file descriptor " + size_t_to_string(_poll_fds[i].fd));
+        }
+    }
+    
+    std::vector<struct pollfd>().swap(_poll_fds);
+    std::vector<int>().swap(_server_sockets);
+    
+    _client_buffers.clear();
+    _client_write_buffers.clear();
+    _clients_ready_to_write.clear();
+    _client_timeouts.clear();
+    
+    if (_config) {
+        delete _config;
+        _config = NULL;
+    }
+    if (_cgi_handler) {
+        delete _cgi_handler;
+        _cgi_handler = NULL;
+    }
+    
+    LOG_INFO("WebServer cleanup complete");
 }
+
+// void WebServer::cleanup() {
+// 	LOG_INFO("Cleaning up WebServer...");
+// 	for (size_t i = 0; i < _server_sockets.size(); ++i) {
+// 		close(_server_sockets[i]);
+// 		LOG_DEBUG("Closed server socket " + size_t_to_string(_server_sockets[i]));
+// 	}
+// 	_server_sockets.clear();
+// 	for (std::map<int, HttpRequest*>::iterator it = _client_requests.begin();
+// 		it != _client_requests.end(); it++)
+// 		delete it->second;
+// 	_client_requests.clear();
+// 	  for (size_t i = 0; i < _poll_fds.size(); ++i) {
+//         if (_poll_fds[i].fd > 0)
+//             close(_poll_fds[i].fd);
+//     }
+//     _poll_fds.clear();
+// 	_client_buffers.clear();
+// 	_client_write_buffers.clear();
+// 	_clients_ready_to_write.clear();
+// 	_client_timeouts.clear();
+// 	if (_cgi_handler){
+// 		delete _cgi_handler;
+// 		_cgi_handler = NULL;
+// 	}
+// 	LOG_INFO("WebServer cleanup complete");
+// }

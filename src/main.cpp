@@ -8,6 +8,7 @@ void signal_handler(int sig) {
     if (g_server_instance && (sig == SIGINT || sig == SIGTERM)) {
         LOG_INFO("Received signal " + size_t_to_string(sig) + ", shutting down gracefully...");
         g_server_instance->cleanup();
+        g_server_instance = NULL;
         exit(0);
     }
 }
@@ -17,7 +18,6 @@ int main(int argc, char* argv[]) {
         std::cerr << "Example: " << argv[0] << " config/default.conf" << std::endl;
         return 1;
     }
-    std::string config_file = argv[1];
     signal(SIGINT, signal_handler);
     signal(SIGTERM, signal_handler);
     signal(SIGPIPE, SIG_IGN);
@@ -25,11 +25,10 @@ int main(int argc, char* argv[]) {
     WebServer server;
     g_server_instance = &server;
 
-    if (!server.initialize(config_file)) {
+    if (!server.initialize(argv[1])) {
         LOG_ERROR("Server initialization failed");
         return 1;
     }
-
     server.run();
 
     server.cleanup();

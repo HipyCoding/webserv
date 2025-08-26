@@ -34,6 +34,7 @@ class WebServer {
     // classes
     CgiHandler* _cgi_handler;
     Config* _config;
+	// std::string config_file_name;
 
     // poll functionality
 	std::vector<struct pollfd> _poll_fds;
