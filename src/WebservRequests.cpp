@@ -110,7 +110,7 @@ std::string WebServer::handleGetRequest(const HttpRequest& request) {
     if (location_config && !location_config->root.empty())
         root = location_config->root;
     
-    std::string file_path = getFilePathWithRoot(uri, root);
+    std::string file_path = root;
     
     if (!fileExists(file_path))
         return generateErrorResponse(404, "Not Found");
@@ -209,6 +209,7 @@ std::string WebServer::handleDeleteRequest(const HttpRequest& request) {
 	if (location_config && !location_config->root.empty())
 		root = location_config->root;
 	
+    // LOG_ERROR("uri: " + uri + "root: " + root);
 	std::string file_path = getFilePathWithRoot(uri, root);
 	
 	LOG_INFO("DELETE request for: " + file_path);
