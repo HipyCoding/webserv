@@ -105,3 +105,54 @@ body.error-page {
     background: #f8f9fa;
     text-align: center;
 }
+
+.file-list {
+    text-align: left;
+    max-width: 600px;
+    margin: 0 auto;
+    list-style: none;
+    padding: 0;
+    background: white;
+    border-radius: 5px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.file-item {
+    padding: 10px 15px;
+    border-bottom: 1px solid #eee;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: background-color 0.2s;
+}
+
+.file-item:hover {
+    background-color: #f8f9fa;
+}
+
+.file-item:last-child {
+    border-bottom: none;
+}
+
+.file-link {
+    color: #3498db;
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.file-link:hover {
+    color: #2980b9;
+    text-decoration: underline;
+}
+
+.file-size {
+    color: #7f8c8d;
+    font-size: 0.9em;
+}
+
+.file-info {
+    color: #7f8c8d;
+    font-style: italic;
+    text-align: center;
+    width: 100%;
+}

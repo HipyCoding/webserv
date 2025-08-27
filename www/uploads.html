@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Upload Area - Webserv</title>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <h1>Upload Area</h1>
+    <p>Upload and manage your files here.</p>
+    
+    <div class="config-test">
+        <h2>Uploaded Files</h2>
+         <div style="border: 1px solid #ddd; padding: 10px; border-radius: 5px; background: white;">
+            <iframe src="/uploads/" width="100%" height="300" frameborder="0" style="border-radius: 3px;"></iframe>
+        </div>
+        
+    </div>
+
+    <script>
+        function refreshListing() {
+            var iframe = document.querySelector('iframe');
+            iframe.src = iframe.src + '?' + new Date().getTime();
+        }
+
+    </script>
+
+    <div class="warning">
+        <strong>Note:</strong> Maximum file size is 1MB. Supported file types: images, documents, text files.
+    </div>
+
+    <script>
+        function loadFiles() {
+            const fileList = document.getElementById('file-listing');
+            const fileActions = document.getElementById('file-actions');
+
+            const filesCleared = sessionStorage.getItem('filesCleared');
+
+            if (filesCleared === 'true') {
+                fileList.innerHTML = '<p><em>No files uploaded yet.</em></p>';
+                fileActions.style.display = 'none';
+            } else {
+                fileList.innerHTML = `
+                    <ul class="file-list">
+                        <li class="file-item">
+                            <a href="/uploads/example.txt" class="file-link" target="_blank">example.txt</a>
+                            <span class="file-size">1.2 KB</span>
+                        </li>
+                        <li class="file-item">
+                            <a href="/uploads/upload_1756205999_.png" class="file-link" target="_blank">upload_1756205999_.png</a>
+                            <span class="file-size">256 KB</span>
+                        </li>
+                    </ul>
+                `;
+                fileActions.style.display = 'block';
+            }
+        }
+    
+        function refreshFiles() {
+            loadFiles();
+        }
+        
+        window.onload = loadFiles;
+        
+    </script>
+
+        <nav class="test-links">
+            <a href="/">Back to Home</a>
+        </nav>
+</body>
+</html>

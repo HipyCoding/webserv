@@ -1,8 +1,0 @@
-
-working																					author
-
-martin		somehow cgi execution runs completely fine on mac os, like we build it		martin
-chris		but doesnt work on the new linux machines. i dont know why. try to find
-ana			out and fix i guess. maybe evaluate on mac os machines
-
-martin		split webserver.cpp inshallah and do other stuff like small bugfixes 		martin
