@@ -81,7 +81,7 @@ bool HttpRequest::parseRequest(const std::string& raw_request) {
 
     size_t body_start = raw_request.find("\r\n\r\n");
     if (body_start == std::string::npos)
-    return false;
+        return false;
     body_start += 4;
 
     if (body_start == std::string::npos)
@@ -106,8 +106,8 @@ bool HttpRequest::parseRequest(const std::string& raw_request) {
         }
         return false;
     } else {
-        if (_method == GET || _method == DELETE) {
-            _body = raw_request.substr(body_start);
+        if (_method == GET || _method == DELETE || _method == UNKNOWN) {
+            _body = raw_request.substr(0, body_start - 8);
             _is_complete = true;
             return true;
         }
