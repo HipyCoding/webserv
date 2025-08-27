@@ -9,8 +9,6 @@ std::string WebServer::generateResponse(const HttpRequest& request) {
     std::string method = request.methodToString();
     std::string uri = request.getUri();
     
-    std::cout << "Processing: " << method << " " << uri << std::endl;
-    
 	if (request.getMethod() == GET) {
 		return handleGetRequest(request);
 	} else if (request.getMethod() == POST) {

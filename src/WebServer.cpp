@@ -363,30 +363,3 @@ void WebServer::cleanup() {
     
     std::cout << "\nCleanup complete. Stopping server..." << std::endl;
 }
-
-// void WebServer::cleanup() {
-// 	LOG_INFO("Cleaning up WebServer...");
-// 	for (size_t i = 0; i < _server_sockets.size(); ++i) {
-// 		close(_server_sockets[i]);
-// 		LOG_DEBUG("Closed server socket " + size_t_to_string(_server_sockets[i]));
-// 	}
-// 	_server_sockets.clear();
-// 	for (std::map<int, HttpRequest*>::iterator it = _client_requests.begin();
-// 		it != _client_requests.end(); it++)
-// 		delete it->second;
-// 	_client_requests.clear();
-// 	  for (size_t i = 0; i < _poll_fds.size(); ++i) {
-//         if (_poll_fds[i].fd > 0)
-//             close(_poll_fds[i].fd);
-//     }
-//     _poll_fds.clear();
-// 	_client_buffers.clear();
-// 	_client_write_buffers.clear();
-// 	_clients_ready_to_write.clear();
-// 	_client_timeouts.clear();
-// 	if (_cgi_handler){
-// 		delete _cgi_handler;
-// 		_cgi_handler = NULL;
-// 	}
-// 	LOG_INFO("WebServer cleanup complete");
-// }
