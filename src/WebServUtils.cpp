@@ -136,9 +136,13 @@ std::string WebServer::generateSuccessResponse(const std::string& content, const
     response << "Content-Length: " << content.length() << "\r\n";
     response << "Connection: close\r\n";
     response << "Server: Webserv/1.0\r\n";
+	response << "Accept-Ranges: bytes\r\n";
+    response << "Cache-Control: no-cache\r\n";
     response << "\r\n";
     response << content;
-    
+	
+	LOG_DEBUG("Generated response with headers: " + size_t_to_string(response.str().length()) + " total bytes");
+
     return response.str();
 }
 
@@ -165,12 +169,18 @@ std::string WebServer::generateErrorResponse(int status_code, const std::string&
 		body += "</body></html>";
 	}
 	
-	std::string response = "HTTP/1.1 " + size_t_to_string(status_code) + " " + getStatusMessage(status_code) + "\r\n";
-	response += "Content-Type: text/html\r\n";
-	response += "Content-Length: " + size_t_to_string(body.length()) + "\r\n";
-	response += "Connection: close\r\n";
-	response += "\r\n";
-	response += body;
+	std::ostringstream response;
 	
-	return response;
+	response << "HTTP/1.1 " << status_code << " " << getStatusMessage(status_code) << "\r\n";
+	response << "Content-Type: text/html\r\n";
+	response << "Content-Length: " << body.length() << "\r\n";
+	response << "Connection: close\r\n";
+	response << "Server: Webserv/1.0\r\n";
+	
+	response << "\r\n";
+	
+	response << body;
+	LOG_DEBUG("Generated error response: " + size_t_to_string(status_code) + " with " + size_t_to_string(response.str().length()) + " bytes");
+	
+	return response.str();
 }

@@ -1,6 +1,6 @@
 NAME = webserv
 CXX = c++
-CXXFLAGS = -Wall -Wextra -Werror -std=c++98 -g3 -DLOG_LEVEL=1
+CXXFLAGS = -Wall -Wextra -Werror -std=c++98 -g3 -DLOG_LEVEL=0
 SRCDIR = src
 INCDIR = include
 OBJDIR = obj

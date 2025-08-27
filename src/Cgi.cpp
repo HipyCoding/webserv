@@ -313,24 +313,32 @@ std::string CgiHandler::parseCgiOutput(const std::string& raw_output) const {
 std::string CgiHandler::generateCgiResponse(const std::string& cgi_headers, const std::string& body) const {
 	std::ostringstream response;
 	
+	// HTTP status line (CRITICAL!)
 	response << "HTTP/1.1 200 OK\r\n";
 	
-	// cgi headers
+	// Add CGI headers if present
 	if (!cgi_headers.empty()) {
-		std::string headers = cgi_headers;// add cgi headers for correct line endings
+		std::string headers = cgi_headers;
+		// Ensure proper line endings
 		if (headers[headers.length() - 1] != '\n')
 			headers += "\r\n";
 		response << headers;
 	}
-	// adding default headers if not existing
+	
+	// Add default headers if not present in CGI output
 	if (cgi_headers.find("Content-Type:") == std::string::npos && 
 		cgi_headers.find("content-type:") == std::string::npos)
 		response << "Content-Type: text/html\r\n";
 	
+	// Essential headers
 	response << "Content-Length: " << body.length() << "\r\n";
 	response << "Connection: close\r\n";
 	response << "Server: Webserv/1.0\r\n";
+	
+	// Empty line to separate headers from body (CRITICAL!)
 	response << "\r\n";
+	
+	// Body content
 	response << body;
 	
 	return response.str();

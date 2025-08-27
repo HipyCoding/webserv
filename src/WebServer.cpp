@@ -6,7 +6,7 @@
 /*   By: christian <christian@student.42.fr>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/03 07:04:49 by christian         #+#    #+#             */
-/*   Updated: 2025/08/26 20:53:00 by christian        ###   ########.fr       */
+/*   Updated: 2025/08/27 04:41:40 by christian        ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -209,6 +209,7 @@ void WebServer::handleClientWrite(int client_fd, int poll_index) {
 		cleanupClient(client_fd, poll_index);
 		return;
 	}
+	LOG_DEBUG("Sending response (first 200 chars): " + response.substr(0, 200));
 
 	ssize_t bytes_sent = send(client_fd, response.c_str(), response.length(), MSG_DONTWAIT);
 	

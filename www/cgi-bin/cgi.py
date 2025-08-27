@@ -55,8 +55,8 @@ print("""<!DOCTYPE html>
 </head>
 <body>
     <div class="container">
-        <h1>🐍 Here is a Python CGI page :D. Feel free to paste other scripts into cgi.py!</h1>
-        <p>This page was generated using Python CGI scripting.</p>
+        <h1>🐍 Here is a Python CGI page :D.</h1>
+        <p> Feel free to paste other CGI scripts into /cgi-bin/cgi.py to generate a page! </p>
         <a href="/" class="button">← Back to Main Page</a>
     </div>
 </body>
