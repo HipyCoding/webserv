@@ -26,7 +26,7 @@ int main(int argc, char* argv[]) {
     g_server_instance = &server;
 
     if (!server.initialize(argv[1])) {
-        LOG_ERROR("Server initialization failed");
+        std::cerr << "Server initialization failed" << std::endl;
         return 1;
     }
     server.run();

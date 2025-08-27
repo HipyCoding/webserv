@@ -6,7 +6,7 @@
 /*   By: christian <christian@student.42.fr>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/03 07:04:49 by christian         #+#    #+#             */
-/*   Updated: 2025/08/27 04:41:40 by christian        ###   ########.fr       */
+/*   Updated: 2025/08/27 07:48:22 by christian        ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -98,9 +98,10 @@ int WebServer::createServerSocket(const std::string& host, int port) {
 	
 	return server_fd;
 }
+
 void WebServer::run() {
+	std::cout << "\nWebserver running..." << std::endl;
 	while (true) {
-		LOG_INFO("server running...");
 		checkClientTimeouts();
 		// set up poll events for both read and write
 		for (size_t i = 0; i < _poll_fds.size(); ++i) {
@@ -360,7 +361,7 @@ void WebServer::cleanup() {
         _cgi_handler = NULL;
     }
     
-    LOG_INFO("WebServer cleanup complete");
+    std::cout << "\nCleanup complete. Stopping server..." << std::endl;
 }
 
 // void WebServer::cleanup() {

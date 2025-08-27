@@ -70,7 +70,7 @@ class WebServer {
 	std::string handleFileUploadToLocation(const HttpRequest& request, const LocationConfig* location_config);
 	std::string handleFormSubmission(const HttpRequest& request);
 	std::string handlePostEcho(const HttpRequest& request);
-	// std::string handleDirectoryRequest(const std::string& dir_path, const std::string& uri);
+	// std::string generateCgiDirectoryListing(const std::string& dir_path, const std::string& uri);
 	std::string handleDirectoryRequest(const std::string& dir_path, const std::string& uri, const LocationConfig* location_config);
 	std::string generateDirectoryListing(const std::string& dir_path, const std::string& uri);
 

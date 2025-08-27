@@ -30,18 +30,15 @@ std::string WebServer::handleGetRequest(const HttpRequest& request) {
 
     // Special handling for uploads directory
     if (uri.find("/uploads/") == 0) {
-        std::string filename = uri.substr(9); // Remove "/uploads/"
+        std::string filename = uri.substr(9);
         
         if (filename.empty()) {
-            // This is a request for /uploads/ directory listing
             std::string upload_dir = "./www/uploads";
             
-            // Check if directory exists
             if (!fileExists(upload_dir) || !isDirectory(upload_dir)) {
                 return generateErrorResponse(404, "Not Found");
             }
             
-            // Generate directory listing for uploads
             return generateDirectoryListing(upload_dir, uri);
         }
         
@@ -63,6 +60,24 @@ std::string WebServer::handleGetRequest(const HttpRequest& request) {
         return generateSuccessResponse(content, getContentType(file_path));
     }
 
+    // Special handling for CGI-bin directory
+    if (uri.find("/cgi-bin/") == 0) {
+        std::string script_name = uri.substr(9);
+        
+        if (script_name.empty()) {
+            std::string cgi_dir = "./www/cgi-bin";
+            
+            if (!fileExists(cgi_dir) || !isDirectory(cgi_dir)) {
+                return generateErrorResponse(404, "Not Found");
+            }
+            
+            return generateDirectoryListing(cgi_dir, uri);
+        }
+        
+        if (_cgi_handler && _cgi_handler->isCgiRequest(uri))
+            return _cgi_handler->handleCgiRequest(request);
+    }
+
     const ServerConfig* server_config = _config->findServerConfig("127.0.0.1", 8080, "");
     if (!server_config) {
         LOG_ERROR("no server config found");
@@ -71,13 +86,14 @@ std::string WebServer::handleGetRequest(const HttpRequest& request) {
 
     const LocationConfig* location_config = _config->findLocationConfig(*server_config, uri);
     
+    // CHANGE: Check redirects BEFORE file existence
     if (location_config){
         std::string redirect_response = handleRedirect(location_config);
         if (!redirect_response.empty())
             return redirect_response;
     }
 
-    if (location_config) {    // checking method permissions
+    if (location_config) {
         bool method_allowed = false;
         for (size_t i = 0; i < location_config->allowed_methods.size(); ++i) {
             if (location_config->allowed_methods[i] == "GET") {
