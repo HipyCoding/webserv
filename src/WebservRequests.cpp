@@ -110,7 +110,9 @@ std::string WebServer::handleGetRequest(const HttpRequest& request) {
     if (location_config && !location_config->root.empty())
         root = location_config->root;
     
-    std::string file_path = root;
+    std::string file_path = getFilePathWithRoot(uri, root);
+    // file_path = root;
+    // std::string redir_root = root;
     
     if (!fileExists(file_path))
         return generateErrorResponse(404, "Not Found");
